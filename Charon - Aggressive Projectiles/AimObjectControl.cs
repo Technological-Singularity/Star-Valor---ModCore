@@ -26,7 +26,7 @@ namespace Charon.StarValor.AggressiveProjectiles {
             if (ss != this.ss)
                 Clear();
             this.ss = ss;
-            rb = ss.rb;
+            rb = ss.Rb;
             turrets = ss.transform.GetComponentsInChildren<WeaponTurret>().ToDictionary(o => (int)o.turretIndex);
 
             //targetPredictor = target.gameObject.GetComponent<TargetPredictor>();

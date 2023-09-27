@@ -6,4 +6,7 @@ namespace Charon.StarValor.ModCore {
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, Inherited = false)]
     public class SerializeAttribute : Attribute { }
+
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public class RegisterManualAttribute : Attribute { }
 }

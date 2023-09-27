@@ -1,31 +1,26 @@
 ﻿using Charon.StarValor.ModCore;
-using Charon.StarValor.ModCore.Procedural;
 namespace Charon.StarValor.MasterTinker {
     public partial class Equipment_DeflectorShield {
         abstract class Targeting : EquipmentComponent {
             protected abstract Layer[] targets { get; }
-            protected override void OnGenerate(EquipmentGenerator generator) => generator["deflector_targets"].value = Utilities.GetLayerMask(targets);
+            public override void BeginInstantiation(EquipmentEx eq) => eq.GetEffect<Effects.Targets>().value = Utilities.GetLayerMask(targets);
 
             class Asteroid : Targeting {
-                public override string Name => DisplayName.ToLowerInvariant();
                 public override string DisplayName => "Asteroid";
                 public override string Description => "asteroids";
                 protected override Layer[] targets => new Layer[] { Layer.Asteroid };
             }
             class Civilian : Targeting {
-                public override string Name => DisplayName.ToLowerInvariant();
                 public override string DisplayName => "Civilian";
                 public override string Description => "approaching obstacles";
                 protected override Layer[] targets => new Layer[] { Layer.Asteroid, Layer.Collectible, Layer.Object, Layer.Spaceship, Layer.Station };
             }
             class Combat : Targeting {
-                public override string Name => DisplayName.ToLowerInvariant();
                 public override string DisplayName => "Combat";
                 public override string Description => "hostile projectiles and drones";
                 protected override Layer[] targets => new Layer[] { Layer.Default, Layer.SmallObject, Layer.Missiles };
             }
             class Multiplex : Targeting {
-                public override string Name => DisplayName.ToLowerInvariant();
                 public override string DisplayName => "Multiplex";
                 public override string Description => "approaching obstacles and hostile objects";
                 protected override Layer[] targets => new Layer[] { Layer.Asteroid, Layer.Collectible, Layer.Object, Layer.Spaceship, Layer.Station, Layer.Default, Layer.SmallObject, Layer.Missiles };

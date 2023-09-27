@@ -1,21 +1,26 @@
 ﻿using Charon.StarValor.ModCore;
+using UnityEngine;
 
 namespace Charon.StarValor.MasterTinker {
     public partial class Equipment_HyperspatialAnchor {
-        public class Effects : Container {
-            public ValueModifier force;
-            public ValueModifier range;
-            public ValueModifier count;
-
-            public Effects() {
-                count = new ValueModifier(Plugin.Instance, name: "anchor_count");
-                force = new ValueModifier(Plugin.Instance, name: "anchor_force");
-                //range = new Cacheable(Plugin.Context, name: "anchor_range", linkId: 0, priority: int.MinValue, function: Cacheable.StandardFunction.Min);
-                range = new ValueModifier(Plugin.Instance, name: "anchor_range");
-
-                AddContainer(force);
-                AddContainer(range);
-                AddContainer(count);
+        public static class Effects {
+            public class Count : EffectExTemplate {
+                public override string GetDescription(IndexableInstanceData data, EffectContext context) =>
+                    GetDefaultDescription(data, context);
+                public override object GetValue(IndexableInstanceData data, EffectContext context) =>
+                    Mathf.Ceil(GetDefaultScaledValue(data, context));
+            }
+            public class Force : EffectExTemplate {
+                public override string GetDescription(IndexableInstanceData data, EffectContext context) =>
+                    GetDefaultDescription(data, context);
+                public override object GetValue(IndexableInstanceData data, EffectContext context) =>
+                    Mathf.Floor(GetDefaultScaledValue(data, context));
+            }
+            public class Range : EffectExTemplate {
+                public override string GetDescription(IndexableInstanceData data, EffectContext context) =>
+                    GetDefaultDescription(data, context);
+                public override object GetValue(IndexableInstanceData data, EffectContext context) =>
+                    Mathf.Floor(GetDefaultScaledValue(data, context));
             }
         }
     }

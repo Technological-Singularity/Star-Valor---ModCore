@@ -21,7 +21,7 @@ namespace Charon.StarValor.ModCore {
         public static void SaveSaveGame(GameData __instance, bool __result) {
             if (!__result)
                 return;
-            Loader.ForEach((context) => context.OnGameSave());
+            ModCore.ForEach((context) => context.OnGameSave());
             Instance.SerializeAll();
         }
         [HarmonyPatch(typeof(GameData), nameof(GameData.LoadGame))]
@@ -29,25 +29,25 @@ namespace Charon.StarValor.ModCore {
         public static void LoadGame(bool __result) {
             if (!__result)
                 return;
-            Loader.ForEach((context) => context.OnGameLoad());
+            ModCore.ForEach((context) => context.OnGameLoad());
             Instance.DeserializeAll();
         }
-        [HarmonyPatch(typeof(GameData), nameof(GameData.LoadGameOld))]
-        [HarmonyPostfix]
-        public static void LoadGameOld(bool __result) {
-            if (!__result)
-                return;
-            //bug? should use file name for backup, but source doesn't
-            Loader.ForEach((context) => context.OnGameLoad());
-            Instance.DeserializeAll();
-        }
+        //[HarmonyPatch(typeof(GameData), nameof(GameData.LoadGameOld))]
+        //[HarmonyPostfix]
+        //public static void LoadGameOld(bool __result) {
+        //    if (!__result)
+        //        return;
+        //    //bug? should use file name for backup, but source doesn't
+        //    Loader.ForEach((context) => context.OnGameLoad());
+        //    Instance.DeserializeAll();
+        //}
         #endregion
 
         public static SerializeSystem Instance { get; private set; }
-        void Awake()  => Instance = this;
+        void Awake() => Instance = this;
 
-        List<ISerializable> serializables = new List<ISerializable>();
-        public void Add(ISerializable obj) => serializables.Add(obj);
+        List<ISerializableGuid> Serializables { get; } = new List<ISerializableGuid>();
+        public void Add(ISerializableGuid obj) => Serializables.Add(obj);
 
         void SerializeAll() {
             BinaryFormatter binaryFormatter = new BinaryFormatter();
@@ -58,7 +58,7 @@ namespace Charon.StarValor.ModCore {
                 try {
                     string tempIndexSavePath = GameData.tempSaveGamePath + ".index";
                     fileStream = File.Create(tempIndexSavePath);
-                    binaryFormatter.Serialize(fileStream, IndexSystem.Instance.GetSerialization());
+                    binaryFormatter.Serialize(fileStream, IndexSystem.Instance.Serialize());
                 }
                 catch (Exception ex) {
                     success = false;
@@ -69,11 +69,11 @@ namespace Charon.StarValor.ModCore {
                         fileStream.Close();
                 }
 
-                Instance.serializables.ForEach((obj) => {
+                Instance.Serializables.ForEach((obj) => {
                     if (!success)
                         return;
 
-                    var extraData = obj.GetSerialization();
+                    var extraData = obj.Serialize();
                     if (extraData == null)
                         return;
 
@@ -87,8 +87,7 @@ namespace Charon.StarValor.ModCore {
                         Debug.LogError($"ERROR trying to save GUID FILE for {obj.Guid}. Exception: {ex}");
                     }
                     finally {
-                        if (fileStream != null)
-                            fileStream.Close();
+                        fileStream?.Close();
                     }
                 });
                 if (!success) {
@@ -129,18 +128,19 @@ namespace Charon.StarValor.ModCore {
             BinaryFormatter binaryFormatter = new BinaryFormatter();
             FileStream fileStream = null;
 
-            Loader.ForEach((context) => context.OnGameSave());
+            ModCore.ForEach((context) => context.OnGameSave());
             
-            serializables.ForEach((context) => {
+            Serializables.ForEach((context) => {
                 string fullSaveGamePath = GameData.fullSaveGamePath + "." + context.Guid;
                 if (File.Exists(fullSaveGamePath)) {
                     fileStream = File.Open(fullSaveGamePath, FileMode.Open);
                     var serialization = binaryFormatter.Deserialize(fileStream);
                     fileStream.Close();
-                    context.Deserialize(true,serialization);
+                    context.OnDeserialize(serialization);
                 }
                 else {
-                    context.Deserialize(false, null);
+                    //No data to load
+                    //throw new Exception("Deserialize file not found");
                 }
             });
         }

@@ -1,20 +1,19 @@
-﻿using Charon.StarValor.ModCore.Procedural;
+﻿using Charon.StarValor.ModCore;
 namespace Charon.StarValor.MasterTinker {
     public partial class Equipment_HyperspatialAnchor {
         abstract class Size : EquipmentComponent {
             protected abstract ShipClassLevel MinSize { get; }
-            protected override bool PrependName => true;
+            public override int NamePriority => -10;
             protected abstract float Count { get; }
             protected abstract float Range { get; }
             protected abstract float Force { get; }
-            protected override void OnGenerate(EquipmentGenerator generator) {
-                generator.Template.minShipClass = MinSize;
-                generator["anchor_count"].value = Count;
-                generator["anchor_range"].value = Range;
-                generator["anchor_force"].value = Force;
+            public override void BeginInstantiation(EquipmentEx eq) {
+                eq.minShipClass = MinSize;
+                eq.GetEffect<Effects.Count>().value = Count;
+                eq.GetEffect<Effects.Force>().value = Force;
+                eq.GetEffect<Effects.Range>().value = Range;
             }
             class Small : Size {
-                public override string Name => "0";
                 public override string DisplayName => null;
                 protected override ShipClassLevel MinSize => ShipClassLevel.Shuttle;
                 protected override float Count => 1;
@@ -22,7 +21,6 @@ namespace Charon.StarValor.MasterTinker {
                 protected override float Force => 10;
             }
             class Large : Size {
-                public override string Name => "3";
                 public override string DisplayName => "Large";
                 protected override ShipClassLevel MinSize => ShipClassLevel.Corvette;
                 protected override float Count => 4;
@@ -30,7 +28,6 @@ namespace Charon.StarValor.MasterTinker {
                 protected override float Force => 17;
             }
             class Capital : Size {
-                public override string Name => "5";
                 public override string DisplayName => "Capital";
                 protected override ShipClassLevel MinSize => ShipClassLevel.Cruiser;
                 protected override float Count => 6;

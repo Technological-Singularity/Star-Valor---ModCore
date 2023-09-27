@@ -8,11 +8,13 @@ using HarmonyLib;
 namespace Charon.StarValor.ModCore {
     [BepInPlugin(pluginGuid, pluginName, pluginVersion)]
     [BepInProcess("Star Valor.exe")]
-    public sealed class Loader : BaseUnityPlugin {
-        const string pluginGuid = "modcore.loader";
-        const string pluginName = "Star Valor Mod Core";
+    public sealed class ModCore : ModCorePlugin {
+        const string pluginGuid = "ModCore.ModCore";
+        const string pluginName = "StarValor ModCore";
         const string pluginVersion = "0.0.0.0";
+        public static ModCorePlugin Instance { get; private set; }
         #region Lookup
+
         static readonly Dictionary<string, ModCorePlugin> pluginsByGuid = new Dictionary<string, ModCorePlugin>();
         public static bool HasGuid(string guid) => pluginsByGuid.ContainsKey(guid);
         public static ModCorePlugin GetPluginByGuid(string guid) => pluginsByGuid[guid];
@@ -32,47 +34,50 @@ namespace Charon.StarValor.ModCore {
             pluginsByGuid[plugin.Guid] = plugin;
         }
 
-        public Loader() => ModCorePlugin.Log = Logger;
-        List<Harmony> patches;
+        List<Harmony> patchedPlugins { get; set; }
+        void Awake() => Instance = this;
 
         void Start() => InitializeAll();
         
         public void InitializeAll() {
-            if (patches != null)
+            if (patchedPlugins != null)
                 return;
-            
-            patches = new List<Harmony>();
+
+            Log.LogMessage($"{pluginName} initializing");
+            patchedPlugins = new List<Harmony>();
             HashSet<Type> uniqueTypes = new HashSet<Type>();
-            foreach (var type in AppDomain.CurrentDomain.GetAssemblies().SelectMany(o => o.GetTypes().Where(t => t.IsDefined(typeof(HasPatchesAttribute))))) {
+            var patching = AppDomain.CurrentDomain.GetAssemblies().SelectMany(o => o.GetTypes().Where(t => t.IsDefined(typeof(HasPatchesAttribute))));
+            Log.LogMessage($"Patching {patching.Count()} types");
+            foreach (var type in patching) {
                 if (uniqueTypes.Contains(type))
                     continue;
                 uniqueTypes.Add(type);
-                Logger.LogMessage($"Patch: {type.FullName}");
-                patches.Add(Harmony.CreateAndPatchAll(type));
+                Logger.LogMessage($"  Patch: {type.FullName}");
+                patchedPlugins.Add(Harmony.CreateAndPatchAll(type));
             }
             uniqueTypes = null;
 
             if (pluginsByGuid.Count == 0)
                 return;
 
-            ModCorePlugin.Log.LogMessage($"Loading {pluginsByGuid.Count} plugins");
+            Log.LogMessage($"Loading {pluginsByGuid.Count} plugins");
             foreach (var plugin in pluginsByGuid.Values) {
-                Logger.LogMessage($"First pass: {plugin.Guid}");
+                Logger.LogMessage($"  Load: {plugin.Guid}");
                 plugin.OnPluginLoad();
             }
             foreach (var plugin in pluginsByGuid.Values) {
-                Logger.LogMessage($"Late pass: {plugin.Guid}");
+                Logger.LogMessage($"  LoadLate: {plugin.Guid}");
                 plugin.OnPluginLoadLate();
             }
-            ModCorePlugin.Log.LogMessage($"Done loading");
+            Log.LogMessage($"{pluginName} done initializing");
         }
         public void UninitializeAll() {
-            if (patches == null)
+            if (patchedPlugins == null)
                 return;
 
-            foreach (var p in patches)
+            foreach (var p in patchedPlugins)
                 p?.UnpatchSelf();
-            patches = null;
+            patchedPlugins = null;
         }
     }
 }

@@ -1,13 +1,18 @@
 ﻿using UnityEngine;
 
-namespace Charon.StarValor.ModCore.Systems.Buff {
+namespace Charon.StarValor.ModCore {
     public abstract class BuffGeneral : BuffBase {
         protected GameObject updaterGO = new GameObject();
         protected Updater updater;
-        BuffGeneral() {
+        protected BuffGeneral() {
             updater = updaterGO.AddComponent<Updater>();
             updater.RegisterFixed(OnFixedUpdate);
         }
+
+        public virtual void Initialize(SpaceShip ss, Equipment equipment, int rarity, int qnt) {
+            this.targetSS = ss;
+        }
+        protected virtual void OnUpdate() { }
         protected virtual void OnFixedUpdate() { }
         protected override void Begin() {
             base.Begin();

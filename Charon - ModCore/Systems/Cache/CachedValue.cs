@@ -4,11 +4,12 @@ using UnityEngine;
 
 namespace Charon.StarValor.ModCore {
     public partial class CachedValue {
+        public static object GetDefaultUID(Type parentType, string fieldName) => parentType.FullName + "++" + fieldName;
         static Stack<List<CachedValue>> deferredContexts = new Stack<List<CachedValue>>();
         static List<CachedValue> deferredCurrent = null;
 
         /// <summary>
-        /// Allows multiple invalidations to be performed before notifying any invalidated values of any changes. 
+        /// Allows multiple invalidations to be performed before notifying any invalidated values of any changes. FIXME
         /// </summary>
         /// <param name="action"></param>
         public static void Defer(Action action) {
@@ -39,7 +40,6 @@ namespace Charon.StarValor.ModCore {
             public CachedValueUpdateArgs(float? oldValue, float? newValue) => (OldValue, NewValue) = (oldValue, newValue);
         }
         public delegate void CachedValueUpdateHandler(object sender, CachedValueUpdateArgs e);
-        public static QualifiedName GetBaseFieldQualifiedName(Type type, string fieldName) => ModCorePlugin.Qualify("", type.FullName + fieldName);
 
         static GameObject _anchorGO;
         static GameObject anchorGO {
@@ -82,7 +82,7 @@ namespace Charon.StarValor.ModCore {
 
         bool valid;
         Control control;
-        QualifiedName qualifiedName;
+        object uid;
         float? defaultValue = null;
         float? _value;
 
@@ -120,7 +120,7 @@ namespace Charon.StarValor.ModCore {
             }
         }
 
-        CachedValue(Control control, QualifiedName qualifiedName) => (this.control, this.qualifiedName) = (control, qualifiedName);
+        CachedValue(Control control, object uid) => (this.control, this.uid) = (control, uid);
         LinkedListNode<ValueMonitor> AssignMonitor(ValueMonitor cacheable) {
             LinkedListNode<ValueMonitor> newNode = new LinkedListNode<ValueMonitor>(cacheable);
             registeredMonitors.AddLast(newNode);
@@ -141,9 +141,9 @@ namespace Charon.StarValor.ModCore {
             return newNode;
         }
 
-        public static (CachedValue value, LinkedListNode<ValueMonitor> node) RegisterMonitor(ValueMonitor cacheable, QualifiedName qualifiedName, object parent) {
+        public static (CachedValue value, LinkedListNode<ValueMonitor> node) RegisterMonitor(ValueMonitor cacheable, object uid, object parent) {
             var control = GetCreateControl(parent);
-            return control.RegisterMonitor(cacheable, qualifiedName);
+            return control.RegisterMonitor(cacheable, uid);
         }
         public static (CachedValue value, LinkedListNode<ValueMonitor> node) RegisterBaseFieldMonitor(ValueMonitor cacheable, Type fieldType, string fieldName, object instance) {
             var control = GetCreateControl(instance);
@@ -156,9 +156,9 @@ namespace Charon.StarValor.ModCore {
             Invalidate();
         }
 
-        public static (CachedValue value, LinkedListNode<(ValueModifier, int)> node) RegisterModifier(ValueModifier cacheable, QualifiedName qualifiedName, object parent, int priority) {
+        public static (CachedValue value, LinkedListNode<(ValueModifier, int)> node) RegisterModifier(ValueModifier cacheable, object uid, object parent, int priority) {
             var control = GetCreateControl(parent);
-            return control.RegisterModifier(cacheable, qualifiedName, priority);
+            return control.RegisterModifier(cacheable, uid, priority);
         }
         public static (CachedValue value, LinkedListNode<(ValueModifier, int)> node) RegisterBaseFieldModifier(ValueModifier cacheable, Type fieldType, string fieldName, object instance, int priority) {
             var control = GetCreateControl(instance);

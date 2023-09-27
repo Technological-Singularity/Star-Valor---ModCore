@@ -19,6 +19,7 @@ namespace Charon.StarValor.ModCore {
         public bool Equals(Location o) => o.Type == Type && o.Id == Id;
         public static bool operator ==(Location b1, Location b2) => b1.Equals(b2);
         public static bool operator !=(Location b1, Location b2) => !(b1.Equals(b2));
+        public override bool Equals(object obj) => obj is Location lo && lo == this;
     }
     
 }

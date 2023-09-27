@@ -1,23 +1,24 @@
-﻿using Charon.StarValor.ModCore.Procedural;
+﻿using Charon.StarValor.ModCore;
 namespace Charon.StarValor.MasterTinker {
     public partial class Equipment_DeflectorShield {
         abstract class Size : EquipmentComponent {
             protected abstract ShipClassLevel MinSize { get; }
-            protected override bool PrependName => true;
+            public override int NamePriority => -10;
             protected abstract float Emitters { get; }
             protected abstract float Range { get; }
             protected abstract float RangeQualityScale { get; }
             protected abstract float Force { get; }
+
+
             //size, energy, price, components...
-            protected override void OnGenerate(EquipmentGenerator generator) {
-                generator.Template.minShipClass = MinSize;
-                generator["deflector_emitters"].value = Emitters;
-                generator["deflector_range"].value = Range;
-                generator["deflector_range"].rarityMod *= RangeQualityScale;
-                generator["deflector_force"].value = Force;
+            public override void BeginInstantiation(EquipmentEx eq) {
+                eq.minShipClass = MinSize;
+                eq.GetEffect<Effects.Emitters>().value = Emitters;
+                eq.GetEffect<Effects.Range>().value = Range;
+                eq.GetEffect<Effects.Range>().mod = RangeQualityScale;
+                eq.GetEffect<Effects.Force>().value = Force;
             }
             class Small : Size {
-                public override string Name => "0";
                 public override string DisplayName => null;
                 protected override ShipClassLevel MinSize => ShipClassLevel.Shuttle;
                 protected override float Emitters => 3;
@@ -26,21 +27,19 @@ namespace Charon.StarValor.MasterTinker {
                 protected override float Force => 20;
             }
             class Large : Size {
-                public override string Name => "3";
                 public override string DisplayName => "Large";
                 protected override ShipClassLevel MinSize => ShipClassLevel.Corvette;
                 protected override float Emitters => 10;
                 protected override float Range => 48;
-                protected override float RangeQualityScale => 0.5f;
+                protected override float RangeQualityScale => 0.1f;
                 protected override float Force => 70;
             }
             class Capital : Size {
-                public override string Name => "5";
                 public override string DisplayName => "Capital";
                 protected override ShipClassLevel MinSize => ShipClassLevel.Cruiser;
                 protected override float Emitters => 30;
                 protected override float Range => 96;
-                protected override float RangeQualityScale => 1f;
+                protected override float RangeQualityScale => 0.2f;
                 protected override float Force => 90;
             }
         }

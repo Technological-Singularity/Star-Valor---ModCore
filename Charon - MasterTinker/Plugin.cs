@@ -1,6 +1,5 @@
 ﻿using BepInEx;
 using Charon.StarValor.ModCore;
-using Charon.StarValor.ModCore.Procedural;
 using HarmonyLib;
 using UnityEngine;
 
@@ -19,45 +18,47 @@ namespace Charon.StarValor.MasterTinker {
     [BepInProcess("Star Valor.exe")]
     [HasPatches]
     public class Plugin : ModCorePlugin {
-        public const string pluginGuid = "starvalor.jram.test";
-        public const string pluginName = "JRAM Test Mod";
+        public const string pluginGuid = "ModCore.MasterTinker";
+        public const string pluginName = "MasterTinker";
         public const string pluginVersion = "0.0.0.0";
-
-        public static ModCorePlugin Instance;
+        public static ModCorePlugin Instance { get; private set; }
         void Awake() => Instance = this;
 
         public override void OnPluginLoadLate() {
-            Equipment_DeflectorShield.Initialize();
-            Equipment_HyperspatialAnchor.Initialize();
-        }
-
-        class TestClass : CI_Data {
-            public string Evaluate { get; set; } = "OK";
+            EquipmentItem.GetAllPermutations<Equipment_HyperspatialAnchor>();
+            EquipmentItem.GetAllPermutations<Equipment_DeflectorShield>();
         }
 
         [HarmonyPatch(typeof(CharacterScreen), nameof(CharacterScreen.Open))]
         [HarmonyPostfix]
         public static void Open(int mode) {
-            Log.LogMessage("Spawning items");
-
             var player = GameObject.FindGameObjectWithTag("Player");
+            if (player is null)
+                Instance.Log.LogWarning("player not found");
             var cargo_system = player.GetComponent<CargoSystem>();
+            if (cargo_system is null)
+                Instance.Log.LogWarning("cargo_system not found");
             var ship = cargo_system.transform.GetComponent<SpaceShip>();
-            if (player.GetComponent<CachedValue.Debugger>() == null)
-                player.AddComponent<CachedValue.Debugger>();
+            if (ship is null)
+                Instance.Log.LogWarning("ship not found");
 
+            //Instance.Log.LogMessage("Showing weapons");
+            //foreach (var w in ship.weapons)
+            //    foreach (var c in w.projectileRef.GetComponents<Component>())
+            //        Instance.Log.LogMessage($"    {c.name} {c.GetType().FullName}");
+            //if (player.GetComponent<CachedValue.Debugger>() == null)
+            //    player.AddComponent<CachedValue.Debugger>();
 
-            foreach (var w in ship.weapons)
-                foreach (var c in w.projectileRef.GetComponents<Component>())
-                    Log.LogMessage(c.name + " " + c.GetType().FullName);
-
-
-
+            Instance.Log.LogMessage("Spawning items");
             void grantEquipment<T>() where T : EquipmentItem {
-                foreach (var equipment in EquipmentItem.GetAllPermutations<T>())
-                    if (Mathf.Abs((int)equipment.minShipClass - ship.sizeClass) < 2 && (equipment.equipName.Contains("Multiplex") || !equipment.equipName.Contains("Array")))
+                foreach (var eq in EquipmentItem.GetAllPermutations<T>()) {
+                    Instance.Log.LogMessage("Spawning " + eq.name);
+                    if ((int)eq.minShipClass <= ship.sizeClass) {
+                        Instance.Log.LogMessage($"    Adding {eq.name}");
                         for (int rarity = 0; rarity <= 5; ++rarity)
-                            cargo_system.StoreItem(2, equipment.id, rarity, 1, 0f, -1, -1, -1);
+                            cargo_system.StoreItem(2, eq.id, rarity, 1, 0f, -1, -1);
+                    }
+                }
             }
             grantEquipment<Equipment_HyperspatialAnchor>();
             grantEquipment<Equipment_DeflectorShield>();

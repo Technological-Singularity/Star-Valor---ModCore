@@ -35,10 +35,12 @@ namespace Charon.StarValor.ModCore {
     [BepInPlugin(pluginGuid, pluginName, pluginVersion)]
     [BepInProcess("Star Valor.exe")]
     [HasPatches]
-    public class LocationSystem : ModCorePlugin, ISerializable {
+    public class LocationSystem : ModCorePlugin, ISerializableGuid {
         public const string pluginGuid = "starvalor.charon.modcore.location_system";
         public const string pluginName = "Charon - Modcore - Location System";
         public const string pluginVersion = "0.0.0.0";
+        
+        static IHasLocation DefaultLocation { get; set; }
         public static LocationSystem Instance { get; private set; }
 
         public abstract class LocationTemplate<T> : IHasLocation where T : class {
@@ -65,9 +67,11 @@ namespace Charon.StarValor.ModCore {
             public virtual void Receive(IHasLocation target) { }
         }
 
-        static IHasLocation DefaultLocation { get; } = new LocationNone();
 
-        void Awake() => Instance = this;
+        void Awake() {
+            Instance = this;
+            DefaultLocation = new LocationNone();
+        }
         public override void OnPluginLoad() => SerializeSystem.Instance.Add(this);
 
         #region Patches
@@ -83,28 +87,20 @@ namespace Charon.StarValor.ModCore {
         }
         #endregion
 
+        [Serialize]
         Dictionary<LocationType, Dictionary<int, HashSet<IHasLocation>>> locationables = new Dictionary<LocationType, Dictionary<int, HashSet<IHasLocation>>>();
+        
+        [Serialize]
         Dictionary<(LocationType type, int id), IHasLocation> locationOwners = new Dictionary<(LocationType, int), IHasLocation>();
 
+        [Serialize]
         IHasLocation activeLocation;
+        
+        [Serialize]
         int generalLocationMaxIndex = 0;
 
-        public object GetSerialization() {
-            return new object[] { generalLocationMaxIndex, locationOwners, locationables, activeLocation.LocationId };
-        }
-        public void Deserialize(bool found, object serialization) {
-            if (!found) {
-                locationables.Clear();
-                locationOwners.Clear();
-                return;
-            }
-
-            object[] objs = (object[])serialization;
-            generalLocationMaxIndex = (int)objs[0];
-            locationOwners = (Dictionary<(LocationType type, int id), IHasLocation>)objs[1];
-            locationables = (Dictionary<LocationType, Dictionary<int, HashSet<IHasLocation>>>)objs[2];
-            activeLocation = GetLocation((Location)objs[3]);
-        }
+        public object OnSerialize() => null;
+        public void OnDeserialize(object data) { }
         public IHasLocation GetLocation(Location location) => GetLocation(location.Type, location.Id);
         public IHasLocation GetLocation(LocationType type, int id) {
             if (type == LocationType.None)

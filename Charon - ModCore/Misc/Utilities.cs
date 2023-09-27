@@ -22,13 +22,15 @@ namespace Charon.StarValor.ModCore {
         }
 
         #region Binding
-        public static List<(FieldInfo first, FieldInfo second)> GetBindsFieldField<TFirst, TSecond>() {
+        public static List<(FieldInfo first, FieldInfo second)> GetBindsFieldField(Type type_first, Type type_second) {
             var binds = new List<(FieldInfo, FieldInfo)>();
-            var first = typeof(TFirst).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).ToDictionary(o => o.Name.ToLowerInvariant(), o => o);
-            var second = typeof(TSecond).GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).ToDictionary(o => o.Name.ToLowerInvariant(), o => o);
+            var first = type_first.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).ToDictionary(o => o.Name.ToLowerInvariant(), o => o);
+            var second = type_second.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).ToDictionary(o => o.Name.ToLowerInvariant(), o => o);
+
             foreach (var kvp in first)
                 if (second.TryGetValue(kvp.Key, out var paired))
                     binds.Add((kvp.Value, paired));
+
             return binds;
         }
         public static void BindSet(object dst, List<(FieldInfo first, FieldInfo second)> binds, object hasFirst, object hasSecond) {
@@ -97,6 +99,17 @@ namespace Charon.StarValor.ModCore {
                     second.SetValue(hasSecond, first.GetValue(hasFirst));
             else
                 throw new ArgumentException("dst must be first or second");
+        }
+        public static void MemberwiseCopy(object dst, object src) {
+            for (var type = dst.GetType(); type != typeof(object); type = type.BaseType) {
+                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance).Where(o => o.CanRead && o.CanWrite);
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+                foreach (var p in properties)
+                    p.SetValue(dst, p.GetValue(src));
+                foreach (var f in fields)
+                    f.SetValue(dst, f.GetValue(src));
+            }
         }
         #endregion
         #region Serialization

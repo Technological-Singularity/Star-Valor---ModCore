@@ -1,39 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
 using Charon.StarValor.ModCore;
-using Charon.StarValor.ModCore.Procedural;
 using UnityEngine;
 
 namespace Charon.StarValor.MasterTinker {
-    [HasEquipments]
     public partial class Equipment_HyperspatialAnchor : EquipmentItem {
-        static List<EquipmentEx> equipments = null;
-        public static List<EquipmentEx> GetEquipment() {
-            if (equipments == null)
-                equipments = GetAllPermutations<Equipment_HyperspatialAnchor>();
-            return equipments;
-        }
-
-        public static void Initialize() {
-            var es = Plugin.Instance.EffectSystem;
-
-            es.Register(name: "anchor_count", description: "Anchor Count: %ceil%", rarityMod: 1f, uniqueLevel: UniqueLevel.Heavy);
-            es.Register(name: "anchor_force", description: "Anchor Force: %floor%", rarityMod: 0.4f);
-            es.Register(name: "anchor_range", description: "Anchor Range: %floor%", rarityMod: 0.3f, invertRarityMod: true);
-        }
-
-        protected override ModCorePlugin Context => Plugin.Instance;
-        public override string Name => DisplayName.ToLowerInvariant().Replace(" ", "_");
+        public override bool UseQualifiedName => true;
+        public override bool UniqueType => true;
         public override string DisplayName => "Hyperspatial Anchor";
         public override string Description => "Deploys spatial anchors to this area of space, opposing all movement";
+        protected override ActiveEquipmentExTemplate ActiveEquipmentTemplate { get; } = ActiveEquipmentExTemplate_BuffBased.Create<Buff_HyperspatialAnchor>(saveState: true, energyChange: 1f);
 
-        protected override IEnumerable<Type> ValidSubcomponentTypes => new List<Type>() {
+        protected override IEnumerable<Type> ValidSubcomponentTypes { get; } =
+            new List<Type>() {
                 typeof(Size),
             };
-        protected override void OnGenerate(EquipmentGenerator generator) {
-            var eq = generator.Template;
+
+        protected override void BeginInstantiation(EquipmentEx eq) {
             eq.activated = true;
-            eq.activeEquipmentIndex = Plugin.Instance.IndexSystem.Get(IndexType.ActiveEffect, typeof(AE_HyperspatialAnchor).FullName);
+            eq.activeEquipmentIndex = ((ActiveEquipmentExTemplate_BuffBased)ActiveEquipmentTemplate).Id;
             eq.defaultKey = KeyCode.K;
             eq.dropLevel = DropLevel.DontDrop;
             eq.rarityCostMod = 1;
@@ -44,8 +29,20 @@ namespace Charon.StarValor.MasterTinker {
             eq.type = EquipmentType.Utility;
             eq.uniqueReplacement = true;
         }
-        public override void Finish(EquipmentGenerator generator) {
-            generator.Template.description = string.Join(" ", Description, generator.Components[0].Description);
+        protected override void FinishInstantiation(EquipmentEx eq) {
+            eq.description = string.Join(" ", Description, eq.ComponentsByType[typeof(Size)].Description);
+        }
+        public override void OnApplying(IIndexableInstance instance) {
+            var eq = (EquipmentEx)instance;
+            AddEffect<Effects.Count>(eq);
+            AddEffect<Effects.Force>(eq);
+            AddEffect<Effects.Range>(eq);
+
+            eq.GetEffect<Effects.Count>().mod = 1f;
+            eq.GetEffect<Effects.Force>().mod = 0.4f;
+            eq.GetEffect<Effects.Range>().mod = -0.3f;
+
+            base.OnApplying(instance);
         }
     }
 }

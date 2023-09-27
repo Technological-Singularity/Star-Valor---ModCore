@@ -91,7 +91,7 @@ namespace Charon.StarValor.ModCore {
         }
 
         public void Refresh() => shipName = shipData.GetShipModelData().modelName;
-        public override void ChangeTactic(int chance) { }
+        public override bool ChangeTactic(int chance) { return false; }
         public override void DefineTactics(ShipClassLevel shipSize, SpaceShip ss) { }
         public virtual string WorkshopName() => shipName;
         public override string Name() => "Derelict " + shipName;

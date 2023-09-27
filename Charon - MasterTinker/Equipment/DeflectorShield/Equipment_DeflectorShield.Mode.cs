@@ -1,4 +1,6 @@
-﻿using Charon.StarValor.ModCore.Procedural;
+﻿using Charon.StarValor.ModCore;
+using UnityEngine.SocialPlatforms;
+
 namespace Charon.StarValor.MasterTinker {
     public partial class Equipment_DeflectorShield {
         abstract class Mode : EquipmentComponent {
@@ -6,24 +8,23 @@ namespace Charon.StarValor.MasterTinker {
             protected abstract float Repulsion { get; }
             protected abstract float Vectoring { get; }
 
-            protected override void OnGenerate(EquipmentGenerator generator) {
-                generator["deflector_magnitude_disperse"].value = Dispersion;
-                generator["deflector_magnitude_repulse"].value = Repulsion;
-                generator["deflector_magnitude_vector"].value = Vectoring;
+            public override void BeginInstantiation(EquipmentEx eq) {
+                eq.GetEffect<Effects.Magnitudes.Dispersion>().value = Dispersion;
+                eq.GetEffect<Effects.Magnitudes.Repulsion>().value = Repulsion;
+                eq.GetEffect<Effects.Magnitudes.Vectoring>().value = Vectoring;
             }
+
             class Deflector : Mode {
-                public override string Name => "deflect";
                 public override string DisplayName => "Deflector";
                 public override string Description => "slowing, redirecting, and repelling";
                 protected override float Dispersion => 1;
                 protected override float Repulsion => 0.3f;
                 protected override float Vectoring => 1;
-                public override void Finish(EquipmentGenerator generator) {
-                    generator["deflector_force"].value /= 1.4f;
+                public override void FinishInstantiation(EquipmentEx eq) {
+                    eq.GetEffect<Effects.Force>().value /= 1.4f;
                 }
             }
             class Disperser : Mode {
-                public override string Name => "dispersion";
                 public override string DisplayName => "Dispersion";
                 public override string Description => "slowing";
                 protected override float Dispersion => 0.9f;
@@ -31,21 +32,19 @@ namespace Charon.StarValor.MasterTinker {
                 protected override float Vectoring => 0.1f;
             }
             class Repulsor : Mode {
-                public override string Name => "repulse";
                 public override string DisplayName => "Repulsor";
                 public override string Description => "vigorously repelling";
                 protected override float Dispersion => 0;
                 protected override float Repulsion => 1;
                 protected override float Vectoring => 0;
-                public override void Finish(EquipmentGenerator generator) {
-                    generator["deflector_force"].value *= 1.8f;
-                    generator["deflector_hardness"].value *= 1.5f;
-                    generator["deflector_range"].value *= 0.5f;
-                    generator["deflector_emitters"].value *= 0.5f;
+                public override void FinishInstantiation(EquipmentEx eq) {
+                    eq.GetEffect<Effects.Emitters>().value *= 0.5f;
+                    eq.GetEffect<Effects.Force>().value *= 1.8f;
+                    eq.GetEffect<Effects.Hardness>().value *= 1.5f;
+                    eq.GetEffect<Effects.Range>().value *= 0.5f;
                 }
             }
             class Vector : Mode {
-                public override string Name => "vectored";
                 public override string DisplayName => "Vectored";
                 public override string Description => "redirecting";
                 protected override float Dispersion => 0;

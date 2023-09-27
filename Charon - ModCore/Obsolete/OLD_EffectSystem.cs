@@ -21,7 +21,7 @@
 //            return false;
 //        }
 
-//        ModCorePlugin context;
+//        PluginContext context;
 //        public EffectSystem(ModCorePlugin plugin) {
 //            this.context = plugin;
 //        }

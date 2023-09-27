@@ -1,18 +1,54 @@
-﻿namespace Charon.StarValor.ModCore {
-    public abstract class IndexableTemplate {
-        public abstract IIndexableInstance GenerateInstance(int id, object data);
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 
-        public void Apply(IIndexableInstance instance, object data) {
-            instance.Template?.OnRemoving(instance, data);
-            instance.Data.Template = this;
-            instance.Template.OnApplying(instance, data);
+namespace Charon.StarValor.ModCore {
+    public abstract class IndexableTemplate : IIndexable, ISerializable {
+        public int Id { get; set; }
+        public QualifiedName QualifiedName { get; set; }
+        public abstract bool UseQualifiedName { get; }
+        public abstract bool UniqueType { get; }
+
+        public virtual QualifiedName GetQualifiedName() => new QualifiedName(GetType());
+
+        public virtual object OnSerialize() => null;
+        public virtual void OnDeserialize(object data) { }
+        [Serialize]
+        protected abstract Type InstanceType { get; }
+        public int RefCount { get; set; } = 0;
+
+        public virtual void Initialize() { }
+        public virtual bool CanRegister() => true;
+        public virtual void OnRegister() { }
+
+        protected virtual QualifiedName GetInstanceQualifiedName(IIndexableInstance instance) => new QualifiedName(instance.GetType(), $"{GetType()}++{instance.GetType()}.{instance.Id}");
+        public IIndexableInstance CreateInstance(QualifiedName? qualifiedName, int? staticId) {
+            var instance = typeof(ScriptableObject).IsAssignableFrom(InstanceType) ? (IIndexableInstance)ScriptableObject.CreateInstance(InstanceType) : (IIndexableInstance)Activator.CreateInstance(InstanceType);
+            instance.Ref(staticId);
+            Apply(instance, qualifiedName ?? GetInstanceQualifiedName(instance));
+            return instance;
         }
-        public virtual void OnRemoving(IIndexableInstance instance, object data) { }
-        public virtual void OnApplying(IIndexableInstance instance, object data) { }
+        public void Apply(IIndexableInstance instance, QualifiedName qualifiedName) {
+            if (!(instance.TemplateData.Template is null)) {
+                IndexSystem.Instance.UnregisterTypeInstance(instance);
+                instance.TemplateData.Template.Instances.Remove(instance.QualifiedName);
+                instance.TemplateData.Template.OnRemoving(instance);
+            }
+            instance.QualifiedName = qualifiedName;
+            instance.TemplateData.Template = this;
+
+            IndexSystem.Instance.RegisterTypeInstance(instance);
+            Instances.Add(instance.QualifiedName, instance);
+            instance.TemplateData.Template.OnApplying(instance);
+        }
+        public virtual void OnApplying(IIndexableInstance instance) { }
+        public virtual void OnRemoving(IIndexableInstance instance) { }
 
         public virtual void VerifyComponents(IIndexableInstance instance) { }
         public virtual int GetHashCode(HashContext context) => this.GetHashCode();
 
-        public IIndexableInstance Allocate(object data) => IndexSystem.Instance.Allocate(this, data);
+        public Dictionary<QualifiedName, IIndexableInstance> Instances { get; } = new Dictionary<QualifiedName, IIndexableInstance>();
+        public IIndexableInstance FirstInstance() => Instances.Count == 0 ? null : Instances.FirstOrDefault().Value;
     }
 }

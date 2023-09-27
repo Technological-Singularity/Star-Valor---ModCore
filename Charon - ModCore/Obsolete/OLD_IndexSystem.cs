@@ -89,9 +89,9 @@
 //            }
 //        }
 
-//        readonly ModCorePlugin context;
+//        readonly PluginContext context;
 
-//        public IndexSystem(ModCorePlugin context) {
+//        public IndexSystem(PluginContext context) {
 //            this.context = context;
 //        }
 

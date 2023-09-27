@@ -83,7 +83,7 @@
 //        }
 //        public void OnLoad(int typeId, LoadFunc func) => GetOrCreate(typeId).OnLoad(func);
 //        public void OnInvalidate(object sender, int typeId, InvalidateFunc func) => GetOrCreate(typeId).OnInvalidate(sender, func);
-//        public string Dump(ModCorePlugin context) {
+//        public string Dump(PluginContext context) {
 //            string wr = "";
 //            foreach(var kvp in effectValues) {
 //                if (IndexSystem.TryGetName(IndexType.Effect, context.Guid, kvp.Key, out var name))

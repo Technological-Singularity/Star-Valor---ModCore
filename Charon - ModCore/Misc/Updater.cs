@@ -46,18 +46,18 @@ namespace Charon.StarValor.ModCore {
                 foreach (var action in onFixedUpdate)
                     action?.Invoke();
         }
-        public void Register(Action onUpdate, float periodSeconds = 0) => _Register(onUpdate);
-        ActionTracker _Register(Action onUpdate, float periodSeconds = 0) {
+        public void Register(Action onUpdate, float period = 0) => _Register(onUpdate, period);
+        ActionTracker _Register(Action onUpdate, float period) {
             if (this.onUpdate == null)
                 this.onUpdate = new Dictionary<Action, ActionTracker>();
-            var tracker = new ActionTracker(onUpdate, periodSeconds);
+            var tracker = new ActionTracker(onUpdate, period);
             this.onUpdate[onUpdate] = tracker;
             return tracker;
         }
-        public void SetPeriod(Action onUpdate, float periodSeconds = 0) {
+        public void SetPeriod(Action onUpdate, float period) {
             if (!this.onUpdate.TryGetValue(onUpdate, out var tracker))
-                tracker = _Register(onUpdate, periodSeconds);
-            tracker.period = periodSeconds;
+                tracker = _Register(onUpdate, period);
+            tracker.period = period;
         }
         public void RegisterFixed(Action onFixedUpdate) {
             if (this.onFixedUpdate == null)

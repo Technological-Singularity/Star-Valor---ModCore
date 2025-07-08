@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Charon.StarValor.ModCore {
     public abstract class IndexableTemplate : IIndexable, ISerializable {
-        public int Id { get; set; }
+        public Guid Guid { get; set; }
         public QualifiedName QualifiedName { get; set; }
         public abstract bool UseQualifiedName { get; }
         public abstract bool UniqueType { get; }
@@ -22,10 +22,10 @@ namespace Charon.StarValor.ModCore {
         public virtual bool CanRegister() => true;
         public virtual void OnRegister() { }
 
-        protected virtual QualifiedName GetInstanceQualifiedName(IIndexableInstance instance) => new QualifiedName(instance.GetType(), $"{GetType()}++{instance.GetType()}.{instance.Id}");
-        public IIndexableInstance CreateInstance(QualifiedName? qualifiedName, int? staticId) {
+        protected virtual QualifiedName GetInstanceQualifiedName(IIndexableInstance instance) => new QualifiedName(instance.GetType(), $"{GetType()}++{instance.GetType()}.{instance.Guid}");
+        public IIndexableInstance CreateInstance(QualifiedName? qualifiedName, Guid? staticGuid) {
             var instance = typeof(ScriptableObject).IsAssignableFrom(InstanceType) ? (IIndexableInstance)ScriptableObject.CreateInstance(InstanceType) : (IIndexableInstance)Activator.CreateInstance(InstanceType);
-            instance.Ref(staticId);
+            instance.Ref(staticGuid);
             Apply(instance, qualifiedName ?? GetInstanceQualifiedName(instance));
             return instance;
         }

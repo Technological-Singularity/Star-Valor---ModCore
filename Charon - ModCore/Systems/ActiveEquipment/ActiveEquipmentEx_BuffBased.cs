@@ -6,7 +6,6 @@ namespace Charon.StarValor.ModCore {
         protected GameObject buffGO;
 
         protected override bool showBuffIcon => this.isPlayer;
-        bool initialized = false;
 
         public object AddBuff(Type type) => buffGO.GetComponent(type) ?? buffGO.AddComponent(type);
         public override void AfterConstructor() {
@@ -34,25 +33,24 @@ namespace Charon.StarValor.ModCore {
             if (!TryActivateDeactivate(shiftPressed, ref target))
                 return;
 
-            if (!initialized) {
-                initialized = true;
-                if (this.buffGO == null) {
-                    buffGO = new GameObject();
-                    buffGO.transform.SetParent(target, worldPositionStays: true);
-                    var control = buffGO.AddComponent<BuffControl>();
-                    control.owner = this.ss;
-                    control.activeEquipment = this;
-                    control.targetEntity = target.GetComponent<Entity>();
-                    //control.Setup(); //for audio and vfx
-                }
+            if (this.buffGO == null) {
+                buffGO = new GameObject();
+                buffGO.transform.SetParent(target, worldPositionStays: true);
+                var control = buffGO.AddComponent<BuffControl>();
+                control.owner = this.ss;
+                control.activeEquipment = this;
+                control.targetEntity = target.GetComponent<Entity>();
+                //control.Setup(); //for audio and vfx
                 var energy = buffGO.AddComponent<BuffEnergyChange>();
                 energy.affectOwner = true;
                 OnInitializationInvoke();
             }
+
             if (buffGO.transform.parent != target) {
                 buffGO.transform.SetParent(target, worldPositionStays: true);
                 //buffGO.GetComponent<BuffControl>().Setup(); //for audio and vfx
             }
+
             if (!active)
                 Activate(shiftPressed, target);
             else

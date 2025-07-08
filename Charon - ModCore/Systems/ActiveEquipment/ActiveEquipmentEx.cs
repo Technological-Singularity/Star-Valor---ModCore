@@ -1,10 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 
 namespace Charon.StarValor.ModCore {
     [HasPatches]
     public abstract class ActiveEquipmentEx : ActiveEquipment, IIndexableInstance, ISerializable {
+        #region Patches
         [HarmonyPatch(typeof(ActiveEquipment), nameof(ActiveEquipment.AddActivatedEquipment))]
         [HarmonyPrefix]
         public static bool AddActivatedEquipment(ref ActiveEquipment __result, Equipment equipment, SpaceShip ss, KeyCode key, int rarity, int qnt) {
@@ -18,6 +20,39 @@ namespace Charon.StarValor.ModCore {
             //Empty ActiveEquipment but ActiveEquipmentIndex > 0 indicates use of base game AE assignment
             return true;
         }
+
+        [HarmonyPatch(typeof(ActiveEquipment), nameof(ActiveEquipment.RemoveSaveState))]
+        [HarmonyPrefix]
+        public static bool RemoveSaveState(ActiveEquipment __instance) {
+            if (!(__instance is ActiveEquipmentEx aex))
+                return true;
+            //FIXME
+            return false;
+        }
+
+        [HarmonyPatch(typeof(ActiveEquipment), nameof(ActiveEquipment.SaveState))]
+        [HarmonyPrefix]
+        public static bool SaveState(ActiveEquipment __instance) {
+            if (!(__instance is ActiveEquipmentEx aex))
+                return true;
+            //FIXME
+            return false;
+        }
+
+        [HarmonyPatch(typeof(SpaceShip), "GetActiveEquipmentSavedStates")]
+        [HarmonyPrefix]
+        private static void GetActiveEquipmentSavedStates(SpaceShip __instance) {
+            if (__instance.activeEquips != null) {
+                for (int i = 0; i < __instance.activeEquips.Count; i++) {
+                    Equipment equipment = __instance.activeEquips[i].equipment;
+                    if (equipment is EquipmentEx eq) 
+                        { } //FIXME - check if EquipmentEx has a saved active state
+                    else if (!__instance.activeEquips[i].active && __instance.activeEquips[i].saveState && __instance.shipData.GetAEState(equipment))
+                        __instance.activeEquips[i].ActivateDeactivate(false, null);
+                }
+            }
+        }
+        #endregion
 
         public QualifiedName QualifiedName { get; set; }
         int IIndexable.RefCount { get; set; } = 0;
@@ -33,12 +68,10 @@ namespace Charon.StarValor.ModCore {
 
         public float CooldownRemaining => CooldownTime - (Time.time - timeDeactivated);
         protected float timeDeactivated;
+        public const int DummyIndex = int.MaxValue;
 
         public ActiveEquipmentEx() => TemplateData = new IndexableInstanceData(this);
-        public int Id {
-            get => id;
-            set => id = value;
-        }
+        public Guid Guid { get; set; }
         public virtual object OnSerialize() => null;
         public virtual void OnDeserialize(object serialization) => TemplateData.Deserialize(serialization);
 
@@ -52,22 +85,22 @@ namespace Charon.StarValor.ModCore {
             this.qnt = qnt;
             this.active = false;
 
+            //fixme
             //to do: create types for each of these effects, use their types to create ValueModifiers
             StartEnergyCost = new ValueModifier(nameof(StartEnergyCost));
             FluxChargesCost = new ValueModifier(nameof(FluxChargesCost));
             CooldownTime = new ValueModifier(nameof(CooldownTime));
 
-            StartEnergyCost.Link(ss.transform);
-            FluxChargesCost.Link(ss.transform);
-            CooldownTime.Link(ss.transform);
+            StartEnergyCost.Link(this);
+            FluxChargesCost.Link(this);
+            CooldownTime.Link(this);
+            //StartEnergyCost.Modifier = equipment.EnergyCost(ss.shipClass, rarity) * qnt * modifier;
         }
 
         public TargetModeInfo TargetInfo { get; } = new TargetModeInfo();
         protected EquipmentEx EquipmentEx => (EquipmentEx)equipment;
-        protected virtual bool SaveCooldown { get; } = false;
-        
-        public void AddStartEnergyCost(float modifier) => StartEnergyCost.Modifier = equipment.EnergyCost(ss.shipClass, rarity) * qnt * modifier;
-        
+        protected virtual bool SaveCooldown { get; } = false;        
+       
         protected bool TryActivateDeactivate(bool shiftPressed, ref Transform target) {
             if (isPlayer)
                 SoundSys.PlaySound(active ? 13 : 14, keepPlaying: false);

@@ -18,7 +18,7 @@ namespace Charon.StarValor.MasterTinker {
 
         protected override void BeginInstantiation(EquipmentEx eq) {
             eq.activated = true;
-            eq.activeEquipmentIndex = ((ActiveEquipmentExTemplate_BuffBased)ActiveEquipmentTemplate).Id;
+            eq.activeEquipmentIndex = ActiveEquipmentEx.DummyIndex;
             eq.defaultKey = KeyCode.K;
             eq.dropLevel = DropLevel.DontDrop;
             eq.rarityCostMod = 1;
@@ -33,6 +33,7 @@ namespace Charon.StarValor.MasterTinker {
             eq.description = string.Join(" ", Description, eq.ComponentsByType[typeof(Size)].Description);
         }
         public override void OnApplying(IIndexableInstance instance) {
+            base.OnApplying(instance);
             var eq = (EquipmentEx)instance;
             AddEffect<Effects.Count>(eq);
             AddEffect<Effects.Force>(eq);
@@ -41,8 +42,6 @@ namespace Charon.StarValor.MasterTinker {
             eq.GetEffect<Effects.Count>().mod = 1f;
             eq.GetEffect<Effects.Force>().mod = 0.4f;
             eq.GetEffect<Effects.Range>().mod = -0.3f;
-
-            base.OnApplying(instance);
         }
     }
 }

@@ -24,14 +24,14 @@ namespace Charon.StarValor.ModCore {
             aex.QualifiedName = aex.GetQualifiedName();
             if (IndexSystem.Instance.TryGetTypeInstance(aex.QualifiedName, out var wr))
                 return (ActiveEquipmentExTemplate_BuffBased)wr;
-            IndexSystem.Instance.AllocateTypeInstance(aex);
+            IndexSystem.Instance.AllocateTypeInstance(aex, null);
             IndexSystem.Instance.RegisterTypeInstance(aex);
             return aex;
         }
 
         public override QualifiedName GetQualifiedName() => new QualifiedName(BuffType, $"{BuffType.Name}++{this.GetType().Name}");
         protected override QualifiedName GetInstanceQualifiedName(IIndexableInstance instance) {
-            return new QualifiedName(BuffType, $"{((IIndexable)this).QualifiedName.Name}.{instance.Id}");
+            return new QualifiedName(BuffType, $"{((IIndexable)this).QualifiedName.Name}.{instance.Guid}");
         }
         public override void OnApplying(IIndexableInstance instance) {
             var aex = (ActiveEquipmentEx_BuffBased)instance;

@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using Charon.StarValor.ModCore;
 using UnityEngine;
-using static Charon.StarValor.MasterTinker.Equipment_DeflectorShield.Effects;
+using static Charon.StarValor.MasterTinker.Equipment_DeflectorArray.Effects;
 
 namespace Charon.StarValor.MasterTinker {
-    public partial class Buff_DeflectorShield : BuffGeneral {
+    public partial class Buff_DeflectorArray : BuffGeneral {
         const float min_cutoff = 0.05f;
         float detectionRange = 0;
         int totalEmitters = 0;
@@ -15,30 +15,33 @@ namespace Charon.StarValor.MasterTinker {
         ValueModifier.Collection data = new ValueModifier.Collection();
         LinkedList<TrackObject> trackedOrder { get; set; } = new LinkedList<TrackObject>();
         Dictionary<Rigidbody, TrackObject> trackedUnique { get; } = new Dictionary<Rigidbody, TrackObject>();
-        protected Buff_DeflectorShield() : base() {
+        protected Buff_DeflectorArray() : base() {
             this.gameObject.name = this.GetType().Name;
         }
         public override void Initialize(SpaceShip ss, Equipment equipment, int rarity, int qnt) {
             base.Initialize(ss, equipment, rarity, qnt);
             var eq = (EquipmentEx)equipment;
-            //var effectContext = new EffectContext() { EquipmentRarityMod = equipment.rarityMod, Rarity = rarity, Qnt = qnt };
+            var effectContext = new EffectContext() { EquipmentRarityMod = equipment.rarityMod, Rarity = rarity, Qnt = qnt };
 
             List<Type> types = new List<Type>() {
                 typeof(Emitters),
                 typeof(Force),
                 typeof(Hardness),
                 typeof(Range),
+                typeof(Targets),
                 typeof(Magnitudes.Dispersion),
                 typeof(Magnitudes.Repulsion),
                 typeof(Magnitudes.Vectoring),
             };
             foreach (var type in types) {
                 var vmod = ValueModifier.FromType(type);
-                vmod.Modifier = eq.GetEffect(type).value;
+                vmod.Modifier = eq.GetEffect(type).GetValue(effectContext);
                 data.Add(type, vmod);
             }
             data.Link(this.targetSS.transform);
-            this.gameObject.AddComponent<CachedValue.Debugger>().Initialize(this.targetSS.transform, 1);
+            //this.gameObject.AddComponent<CachedValue.Debugger>().Initialize(this.targetSS.transform, 1);
+            SetOnUpdate(OnUpdate, 0.25f);
+            SetOnFixedUpdate(OnFixedUpdate, true);
         }
 
         //List<Vector3> emitterPositions = new List<Vector3>();
@@ -97,7 +100,7 @@ namespace Charon.StarValor.MasterTinker {
         //         }
         //return closest;
         //}
-        protected override void OnUpdate() {
+        void OnUpdate() {
             if (!this.active || this.targetSS.transform is null)
                 return;
 
@@ -149,11 +152,11 @@ namespace Charon.StarValor.MasterTinker {
             foreach (var collider in Physics.OverlapSphere(this.targetSS.transform.position, detectionRange, targetMask, QueryTriggerInteraction.Ignore))
                 tryAddCollider(collider);
 
-            Plugin.Instance.Log.LogWarning($"Found {trackedOrder.Count} colliders within {detectionRange} range");
-            //foreach (var o in tracked)
-            //    Core.Log.LogWarning(o.RigidBody.tag);
+            //Plugin.Instance.Log.LogWarning($"Found {trackedOrder.Count} colliders within {detectionRange} range");
+            //foreach (var o in trackedOrder)
+            //    Plugin.Instance.Log.LogWarning(o.RigidBody.tag + " " + Vector3.Distance(this.targetSS.transform.position, o.Collider.ClosestPoint(this.targetSS.transform.position)));
         }
-        protected override void OnFixedUpdate() {
+        void OnFixedUpdate() {
             if (trackedOrder.Count == 0)
                 return;
 
@@ -166,7 +169,7 @@ namespace Charon.StarValor.MasterTinker {
 
             bool runUpdate = false;
             foreach (var trackObj in trackedOrder)
-                trackObj.Reset();
+                trackObj.ResetForces();
 
             LinkedListNode<TrackObject> node = trackedOrder.First;
             //totalEmitters = int.MaxValue;           //debug
@@ -213,7 +216,7 @@ namespace Charon.StarValor.MasterTinker {
                 var normalSpeed = Vector3.Dot(relVelocity, normForceVector);
                 var relSpeed = Vector3.Magnitude(relVelocity);
 
-                float repulseScale = 0, deflectScale = 0, disperseScale = 0;
+                float repulseScale = 0, vectorScale = 0, disperseScale = 0;
                 if (data.Get<Magnitudes.Repulsion>() != 0) {
                     var modifier = Mathf.Min(Mathf.Abs(data.Get<Magnitudes.Repulsion>()), 1) * 0.7f + 0.3f;
                     var repulseRange = rangeEffective / modifier;
@@ -231,28 +234,28 @@ namespace Charon.StarValor.MasterTinker {
                     var speedScale = getExponentialScale(normalSpeed / 20);
                     var distScale = 1;// 1 - getExponentialScale(rangeEffective / data.Get<Range>());
 
-                    deflectScale = speedScale * distScale * data.Get<Magnitudes.Vectoring>();
+                    vectorScale = speedScale * distScale * data.Get<Magnitudes.Vectoring>();
                     disperseScale = speedScale * distScale * data.Get<Magnitudes.Dispersion>();
                 }
 
-                float ars = Math.Abs(repulseScale), adefs = Mathf.Abs(deflectScale), adisp = Mathf.Abs(disperseScale);
+                float ars = Math.Abs(repulseScale), adefs = Mathf.Abs(vectorScale), adisp = Mathf.Abs(disperseScale);
                 if (ars <= float.Epsilon && adefs <= float.Epsilon && adisp <= float.Epsilon || ars + adefs + adisp < min_cutoff) {
                     target.Emitters = 0;
                     continue;
                 }
 
-                Vector3 repulsion = new Vector3(), dispersion = new Vector3(), deflection = new Vector3();
+                Vector3 repulsion = new Vector3(), dispersion = new Vector3(), vectoring = new Vector3();
                 Vector3 normVelVector = relVelocity.normalized;
                 Vector3 normAwayVector = (closestTargetPos - this.targetSS.transform.position).normalized;
 
                 Vector3 normSideVector = (normAwayVector * Vector3.Dot(normAwayVector, normVelVector) - normVelVector).normalized;
                 if (Mathf.Abs(repulseScale) > float.Epsilon)
                     repulsion = repulseScale * normAwayVector;
-                if (Mathf.Abs(deflectScale) > float.Epsilon)
-                    deflection = deflectScale * normSideVector;
+                if (Mathf.Abs(vectorScale) > float.Epsilon)
+                    vectoring = vectorScale * normSideVector;
                 if (Mathf.Abs(disperseScale) > float.Epsilon)
                     dispersion = disperseScale * normVelVector;
-                target.QueuedVector = repulsion + deflection + dispersion;
+                target.QueuedVector = repulsion + vectoring + dispersion;
                 target.QueuedForce = target.QueuedVector.magnitude;
                 target.QueuedVector = target.QueuedVector.normalized;
 
@@ -262,7 +265,6 @@ namespace Charon.StarValor.MasterTinker {
                 //	var scalar = Mathf.Max(0, Mathf.Pow(Mathf.Abs(target.QueuedForce), 0.25f));
                 //	target.QueuedForce = sign * scalar * mult;
                 //}
-
 
                 var thisSize = ownerClosestCollider.bounds.size.magnitude;
                 var targetSize = target.Collider.bounds.size.magnitude;

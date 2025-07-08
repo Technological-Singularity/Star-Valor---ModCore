@@ -1,7 +1,7 @@
 ﻿using Charon.StarValor.ModCore;
 
 namespace Charon.StarValor.MasterTinker {
-    //public partial class Equipment_DeflectorShield {
+    //public partial class Equipment_DeflectorArray {
     //    public class Effects : Container {
     //        public ValueModifier targets;
     //        public ValueModifier force;
@@ -42,7 +42,7 @@ namespace Charon.StarValor.MasterTinker {
     //    }
     //}
 
-    //public static class Equipment_DeflectorShieldz {
+    //public static class Equipment_DeflectorArrayz {
     //	readonly static Layer[] targets_asteroid = new Layer[] { Layer.Asteroid };
     //	readonly static Layer[] targets_civilian = new Layer[] { Layer.Asteroid, Layer.Collectible, Layer.Object, Layer.Spaceship, Layer.Station };
     //	readonly static Layer[] targets_combat = new Layer[] { Layer.Default, Layer.SmallObject, Layer.Missiles };
@@ -53,11 +53,11 @@ namespace Charon.StarValor.MasterTinker {
     //		eq.name = typeName;
     //		eq.id = Core.Context.IndexSystem.Set(IndexType.Equipment, typeName);
     //		eq.activated = true;
-    //		eq.activeEquipmentIndex = Core.Context.IndexSystem.Get(IndexType.ActiveEffect, typeof(AE_DeflectorShield).FullName);
+    //		eq.activeEquipmentIndex = Core.Context.IndexSystem.Get(IndexType.ActiveEffect, typeof(AE_DeflectorArray).FullName);
     //		eq.defaultKey = KeyCode.X;
     //		eq.description = description + $"\n\nDefault key: '{Enum.GetName(typeof(KeyCode), eq.defaultKey)}'";
     //		eq.dropLevel = DropLevel.Normal;
-    //		eq.effects = null;// Core.Context.EffectSystem.GetEffects<Buff_DeflectorShield.Data>(effectMultiplier, Extensions.GetLayerMask(targets), force, range, hardness, emitters, repulsion, deflection, dispersion);
+    //		eq.effects = null;// Core.Context.EffectSystem.GetEffects<Buff_DeflectorArray.Data>(effectMultiplier, Extensions.GetLayerMask(targets), force, range, hardness, emitters, repulsion, deflection, dispersion);
     //		eq.energyCost = energy;
     //		eq.equipName = name;
     //		eq.minShipClass = minClass;
@@ -155,13 +155,13 @@ namespace Charon.StarValor.MasterTinker {
     //		id = Core.GetIndex(id),
 
     //		activated = false,
-    //		activeEquipmentIndex = Core.GetActiveIndex(typeof(AE_DeflectorShield)),
+    //		activeEquipmentIndex = Core.GetActiveIndex(typeof(AE_DeflectorArray)),
     //		//buff
     //		//crafting materials //make list; use auto-generated for testing
     //		defaultKey = KeyCode.G,
     //		description = $"Test Description (size: {size})",
     //		dropLevel = DropLevel.Normal, //boss/elite loot, etc
-    //		effects = EffectAttribute.CreateEffects(typeof(AE_DeflectorShield), effectValues[size]), //determines uniquness, stores effectiveness information,
+    //		effects = EffectAttribute.CreateEffects(typeof(AE_DeflectorArray), effectValues[size]), //determines uniquness, stores effectiveness information,
     //		//enableChangeKey //whether or not the key can be changed?
     //		energyCost = energyCosts[size],
     //		//energyCostPerShipClass //bool, modifies energy cost by ship class (determine how)

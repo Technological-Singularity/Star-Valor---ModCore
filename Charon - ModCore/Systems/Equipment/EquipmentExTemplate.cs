@@ -41,7 +41,7 @@ namespace Charon.StarValor.ModCore {
         public abstract string DisplayName { get; }
         public virtual string Description { get; }
         protected virtual IEnumerable<Type> ValidSubcomponentTypes { get; } = null;
-        protected abstract ActiveEquipmentExTemplate ActiveEquipmentTemplate { get; }
+        protected virtual ActiveEquipmentExTemplate ActiveEquipmentTemplate { get; } = null;
 
         protected virtual void BeginInstantiation(EquipmentEx eq) { }
         protected virtual void FinishInstantiation(EquipmentEx eq) { }
@@ -149,16 +149,14 @@ namespace Charon.StarValor.ModCore {
             }
             FinishInstantiation(eq);
             eq.equipName = getName(nameComponents);
-
-            if (!EquipmentEx.TryAddEquipment(eq))
-                throw new ArgumentException("Already allocated id", eq.Id.ToString());
             return eq;
         }
         public override void OnApplying(IIndexableInstance instance) {
             var eq = (EquipmentEx)instance;
             eq.name = instance.QualifiedName.Name;
+            eq.id = Utilities.Guid_to_Int(eq.Guid);
             if (!(ActiveEquipmentTemplate is null))
-                eq.ActiveEquipment = (ActiveEquipmentEx)ActiveEquipmentTemplate.CreateInstance(null, null);
+                eq.ActiveEquipment = (ActiveEquipmentEx)ActiveEquipmentTemplate.CreateInstance(null, eq.Guid);
         }
         public override void OnRemoving(IIndexableInstance instance) {
             var eq = (EquipmentEx)instance;

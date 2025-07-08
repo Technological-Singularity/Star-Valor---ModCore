@@ -2,7 +2,7 @@
 using UnityEngine;
 
 namespace Charon.StarValor.MasterTinker {
-    public partial class Equipment_DeflectorShield {
+    public partial class Equipment_DeflectorArray {
         public static class Effects {
             public class Targets : EffectExTemplate {
                 public override void OnApplying(IIndexableInstance instance) {

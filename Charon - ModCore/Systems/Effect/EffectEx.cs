@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using System;
+using HarmonyLib;
 
 namespace Charon.StarValor.ModCore {
     [HasPatches]
@@ -14,6 +15,36 @@ namespace Charon.StarValor.ModCore {
             }
             return true;
         }
+
+        //Convert these to EffectEx lookups:
+        //CargoSystem.SortItems
+        //Drone.GetStats
+        //Equipment.GetAdditionalDescription
+        //Equipment.GetEffect
+        //Equipment.GetEffectString
+        //Equipment.IsDrone (get)
+        //Equipment.IsImpulseDrive (get)
+        //EquipmentDB.GetActiveEnergyCost
+        //EquipmentDB.GetDiminishingEffect
+        //EquipmentDB.GetEffect
+        //EquipmentDB.GetEffectRaw
+        //EquipmentDB.GetEnergyExpend
+        //EquipmentDB.GetEquipmentID
+        //EquipmentDB.GetEquipmentString
+        //EquipmentDB.GetQuantity
+        //EquipmentDB.GetRandomArmor
+        //EquipmentDB.GetRandomEquipment
+        //EquipmentDB.SortList
+        //Inventory.EquipItem
+        //Inventory.ScrapItem
+        //Market.SortMarket
+        //PlayerCharacter.SortBlueprints
+        //SpaceShip.CalculateShipStats
+        //SpaceShip.GetEffect
+        //SpaceShipData.FindUniqueInstalledEquipment
+        //SpaceShipData.GetUniqueEquipmentInstalled
+        //SpaceShipData.SortEquipments
+
         #endregion
 
         class EffectExEmpty : EffectEx {
@@ -31,10 +62,7 @@ namespace Charon.StarValor.ModCore {
         [Serialize]
         public IndexableInstanceData TemplateData { get; private set; }
         public EffectEx() => TemplateData = new IndexableInstanceData(this);
-        public int Id {
-            get => type;
-            set => type = value;
-        }
+        public Guid Guid { get; set; }
         public bool IsLastInOrder { get; set; } = false;
         object ISerializable.OnSerialize() => null;
         void ISerializable.OnDeserialize(object data) { }

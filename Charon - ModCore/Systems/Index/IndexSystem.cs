@@ -35,7 +35,7 @@ namespace Charon.StarValor.ModCore {
                 var obj = (IndexableTemplate)Activator.CreateInstance(type);
                 templateObjs.Add(obj);
                 if (obj.CanRegister()) {
-                    AllocateTypeInstance(obj);
+                    AllocateTypeInstance(obj, null);
                     RegisterTypeInstance(obj);
                 }
             }
@@ -48,8 +48,6 @@ namespace Charon.StarValor.ModCore {
 
             SerializeSystem.Instance.Add(this);
         }
-
-        const int minIndex = 1 << 24;
 
         HashSet<Type> validBaseTypes { get; } = new HashSet<Type>();
         
@@ -81,11 +79,11 @@ namespace Charon.StarValor.ModCore {
             }
         }
 
-        public void AllocateTypeInstance(IIndexable instance, int? staticId = null) {
+        public void AllocateTypeInstance(IIndexable instance, Guid? staticGuid) {
             var type = GetBaseType(instance.GetType());
             if (!allocated.TryGetValue(type, out var resources))
                 resources = (allocated[type] = new ResourceAllocator());
-            instance.Id = resources.Allocate(instance, staticId);
+            instance.Guid = resources.Allocate(instance, staticGuid);
         }
         public void RegisterTypeInstance(IIndexable instance) {
             if (instance.UseQualifiedName) {
@@ -125,17 +123,17 @@ namespace Charon.StarValor.ModCore {
             }
             if (!allocated.TryGetValue(type, out var resources))
                 throw new ArgumentException("Not allocated basetype", type.FullName);
-            if (resources.Deallocate(instance.Id))
+            if (resources.Deallocate(instance.Guid))
                 allocated.Remove(type);
         }
         public IEnumerable<T> GetAllTypeInstance<T>() where T : IIndexable => GetAllTypeInstance(typeof(T)).Select(o => (T)o);
-        public IIndexable GetTypeInstance(Type type, int id) {
+        public IIndexable GetTypeInstance(Type type, Guid guid) {
             type = GetBaseType(type);
-            if (!allocated.TryGetValue(type, out var resources) || !resources.TryGetValue(id, out var wr))
-                throw new ArgumentException("Not allocated id or basetype", $"{id} {type.FullName}");
+            if (!allocated.TryGetValue(type, out var resources) || !resources.TryGetValue(guid, out var wr))
+                throw new ArgumentException("Not allocated id or basetype", $"{guid} {type.FullName}");
             return (IIndexable)wr;
         }
-        public T GetTypeInstance<T>(int id) where T : IIndexable => (T)GetTypeInstance(typeof(T), id);
+        public T GetTypeInstance<T>(Guid guid) where T : IIndexable => (T)GetTypeInstance(typeof(T), guid);
         public IIndexable GetTypeInstance(QualifiedName name) {
             if (!registeredNames.TryGetValue(name, out var instance))
                 throw new ArgumentException("Not allocated name", name.FullName);
@@ -153,15 +151,15 @@ namespace Charon.StarValor.ModCore {
             return Enumerable.Empty<IIndexable>();
         }
 
-        public bool TryGetTypeInstance(Type type, int id, out IIndexable instance) {
+        public bool TryGetTypeInstance(Type type, Guid guid, out IIndexable instance) {
             type = GetBaseType(type);
-            if (allocated.TryGetValue(type, out var resources) && resources.TryGetValue(id, out instance))
+            if (allocated.TryGetValue(type, out var resources) && resources.TryGetValue(guid, out instance))
                 return true;
             instance = default;
             return false;
         }
-        public bool TryGetTypeInstance<T>(int id, out T instance) where T : IIndexable {
-            if (TryGetTypeInstance(typeof(T), id, out var _inst)) {
+        public bool TryGetTypeInstance<T>(Guid guid, out T instance) where T : IIndexable {
+            if (TryGetTypeInstance(typeof(T), guid, out var _inst)) {
                 instance = (T)_inst;
                 return true;
             }

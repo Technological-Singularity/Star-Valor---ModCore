@@ -19,7 +19,7 @@ namespace Charon.StarValor.MasterTinker {
         public override void Initialize(SpaceShip ss, Equipment equipment, int rarity, int qnt) {
             base.Initialize(ss, equipment, rarity, qnt);
             var eq = (EquipmentEx)equipment;
-            //var effectContext = new EffectContext() { EquipmentRarityMod = equipment.rarityMod, Rarity = rarity, Qnt = qnt };
+            var effectContext = new EffectContext() { EquipmentRarityMod = equipment.rarityMod, Rarity = rarity, Qnt = qnt };
 
             List<Type> types = new List<Type>() {
                 typeof(Count),
@@ -28,13 +28,14 @@ namespace Charon.StarValor.MasterTinker {
             };
             foreach (var type in types) {
                 var vmod = ValueModifier.FromType(type);
-                vmod.Modifier = eq.GetEffect(type).value;
+                vmod.Modifier = eq.GetEffect(type).GetValue(effectContext);
                 data.Add(type, vmod);
             }                
             data.Link(this.targetSS.transform);
-            this.gameObject.AddComponent<CachedValue.Debugger>().Initialize(this.targetSS.transform, 1);
+            //this.gameObject.AddComponent<CachedValue.Debugger>().Initialize(this.targetSS.transform, 1);
+            SetOnFixedUpdate(OnFixedUpdate, true);
         }
-        protected override void OnFixedUpdate() {
+        void OnFixedUpdate() {
             bool allBreak = true;
             foreach (var (source, renderer, _) in renderers) {
                 var vect = source.transform.position - this.targetSS.transform.position;
@@ -116,6 +117,7 @@ namespace Charon.StarValor.MasterTinker {
                 renderers.Clear();
                 data.Unlink();
                 data.Enabled = false;
+                Plugin.Instance.Log.LogWarning("END");
             }
             base.End();
         }

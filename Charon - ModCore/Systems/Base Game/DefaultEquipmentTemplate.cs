@@ -46,39 +46,67 @@ using UnityEngine;
 namespace Charon.StarValor.ModCore {
     [RegisterManual]
     public class DefaultEquipmentTemplate : EquipmentExTemplate {
-        public static List<(PropertyInfo, FieldInfo)> Binds { get; } = Utilities.GetBindsPropertyField<DefaultComponent, Equipment>();
-
-        public List<EffectExTemplate> effects;
-        public DefaultComponent values;
-        GameObject GO { get; } = new GameObject();
+        static Dictionary<int, DefaultEquipmentTemplate> registered = new Dictionary<int, DefaultEquipmentTemplate>();
+        public static DefaultEquipmentTemplate Register(Equipment equipment) {
+            if (registered.TryGetValue(equipment.id, out var wr))
+                return wr;
+            ModCore.Instance.Log.LogMessage($"    Registering {equipment.name} as EquipmentEx [{equipment.id}]");
+            wr = new DefaultEquipmentTemplate(equipment);
+            IndexSystem.Instance.AllocateTypeInstance(wr, Utilities.Int_to_Guid(equipment.id));
+            registered.Add(equipment.id, wr);
+            return wr;
+        }
 
         public string Name { get; }
         public override string DisplayName => null;
 
         public override bool UseQualifiedName { get; } = false;
         public override bool UniqueType { get; } = false;
-        protected override ActiveEquipmentExTemplate ActiveEquipmentTemplate => null;
+
+        List<EffectExTemplate> effects;
+
+        #region Binds
+        static List<(PropertyInfo, FieldInfo)> binds { get; } = Utilities.GetBindsPropertyField<BaseValues, Equipment>();
+        class BaseValues {
+            public int Id { get; set; }
+            public string RefName { get; set; }
+            public ShipClassLevel MinShipClass { get; set; } = ShipClassLevel.Shuttle;
+            public bool Activated { get; set; }
+            public bool EnableChangeKey { get; set; } = true;
+            public float Space { get; set; } = 1f;
+            public float EnergyCost { get; set; }
+            public bool EnergyCostPerShipClass { get; set; }
+            public float RarityCostMod { get; set; }
+            public int TechLevel { get; set; } = 1;
+            public int SortPower { get; set; } = 1;
+            public float MassChange { get; set; }
+            public EquipmentType Type { get; set; }
+            public List<Effect> Effects { get; set; }
+            public bool UniqueReplacement { get; set; }
+            public float RarityMod { get; set; } = 1f;
+            public int SellChance { get; set; } = 100;
+            public ReputationRequisite RepReq { get; set; }
+            public DropLevel DropLevel { get; set; }
+            public int LootChance { get; set; } = 100;
+            public bool SpawnInArena { get; set; } = true;
+            public Sprite Sprite { get; set; }
+            public int ActiveEquipmentIndex { get; set; }
+            public KeyCode DefaultKey { get; set; }
+            public GameObject Buff { get; set; }
+            public int RequiredItemID { get; set; } = -1;
+            public int RequiredQnt { get; set; }
+            public string EquipName { get; set; }
+            public string Description { get; set; }
+            public List<CraftMaterial> CraftingMaterials { get; set; }
+        }
+        BaseValues bindValues = new BaseValues();
+        #endregion
 
         DefaultEquipmentTemplate(Equipment equipment) {
             Name = equipment.name;
-            IndexSystem.Instance.AllocateTypeInstance(this, equipment.id);
             effects = equipment.effects?.Select(o => DefaultEffectTemplate.Register(o)).ToList() ?? null;
-            values = GO.AddComponent<DefaultComponent>();
-            Utilities.BindSet(values, Binds, values, equipment); //copy base values
-            equipment.id = -1;
-        }
-        ~DefaultEquipmentTemplate() {
-            UnityEngine.Object.Destroy(values);
-            UnityEngine.Object.Destroy(GO);
-        }
-        public static DefaultEquipmentTemplate Register(Equipment equipment) {
-            ModCore.Instance.Log.LogMessage($"Registering {equipment.name} as EquipmentEx [{equipment.id}]");
-            var template = new DefaultEquipmentTemplate(equipment);
-            IndexSystem.Instance.AllocateTypeInstance(template, equipment.id);
-            return template;
-        }
-        public Equipment CreateInstance() => (Equipment)CreateInstance(new QualifiedName(typeof(Equipment), Name), Id);
-        
+            Utilities.BindSet(bindValues, binds, bindValues, equipment);
+        }       
         public override IEnumerable<EquipmentEx> GetAllPermutations() {
             return new List<EquipmentEx>(Instances.Select(o => (EquipmentEx)o.Value));
         }
@@ -86,18 +114,24 @@ namespace Charon.StarValor.ModCore {
         protected override void FinishInstantiation(EquipmentEx eq) { }
 
         public override void OnApplying(IIndexableInstance instance) {
+            base.OnApplying(instance);
             var eq = (EquipmentEx)instance;
-            var component = eq.TemplateData.GetComponent<DefaultComponent>();
-            component.OnApplying(eq);
-            if (component.Activated)
-                eq.ActiveEquipment = IndexSystem.Instance.GetTypeInstance<ActiveEquipmentEx>(eq.activeEquipmentIndex);
+
+            Utilities.BindSet(instance, binds, bindValues, instance);
+            //ModCore.Instance.Log.LogWarning("---- Binds for " + eq.name);
+            //foreach (var (name, val) in Utilities.BindDump(instance, binds))
+            //    ModCore.Instance.Log.LogWarning("    " + name + " : " + val);
+            //ModCore.Instance.Log.LogWarning("----");
+
+            eq.id = Utilities.Guid_to_Int(Guid);
             eq.effects = effects.Select(o => (Effect)o.CreateInstance(null, null)).ToList();
+            eq.ActiveEquipment = null;
         }
         public override void OnRemoving(IIndexableInstance instance) {
+            base.OnRemoving(instance);
             var eq = (EquipmentEx)instance;
             eq.ActiveEquipment = null;
             eq.activeEquipmentIndex = 0;
-            UnityEngine.Object.Destroy(eq.TemplateData.GetComponent<DefaultComponent>());
         }
     }
 }

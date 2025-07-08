@@ -21,7 +21,7 @@ namespace Charon.StarValor.ModCore {
                 updaterGO = new GameObject();
                 updaterGO.transform.SetParent(transform);
                 updater = updaterGO.AddComponent<Updater>();
-                updater.Register(Debug, period_ms);
+                updater.SetOnUpdate(Debug, period_ms);
                 updater.enabled = true;
             }
             public string Dump() {

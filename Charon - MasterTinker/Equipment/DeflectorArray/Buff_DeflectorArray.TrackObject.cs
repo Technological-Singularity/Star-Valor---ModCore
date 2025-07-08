@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 namespace Charon.StarValor.MasterTinker {
-    public partial class Buff_DeflectorShield {
+    public partial class Buff_DeflectorArray {
         class TrackObject {
             public Collider Collider { get; }
             public Rigidbody RigidBody { get; }
@@ -44,7 +44,7 @@ namespace Charon.StarValor.MasterTinker {
             }
             int _emitterCount = 0;
 
-            public void Reset() {
+            public void ResetForces() {
                 QueuedForce = 0;
             }
 

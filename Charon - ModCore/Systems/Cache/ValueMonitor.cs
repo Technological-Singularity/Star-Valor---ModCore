@@ -77,9 +77,9 @@ namespace Charon.StarValor.ModCore {
             if (cachedValue == null)
                 return;
             UnlinkOne();
-            cachedValue = null;
             if (linkNode != null)
                 UnlinkMonitor();
+            cachedValue = null;
         }
         void UnlinkMonitor() {
             cachedValue.UnregisterMonitor(linkNode);
@@ -89,7 +89,7 @@ namespace Charon.StarValor.ModCore {
         public void Relink() {
             if (cachedValue != null)
                 return;
-            LinkOne(lastTarget);
+            cachedValue = LinkOne(lastTarget);
         }
     }
 }

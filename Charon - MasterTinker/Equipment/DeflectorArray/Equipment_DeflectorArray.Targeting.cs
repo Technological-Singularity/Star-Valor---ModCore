@@ -1,60 +1,34 @@
 ﻿using Charon.StarValor.ModCore;
-using UnityEngine.SocialPlatforms;
-
 namespace Charon.StarValor.MasterTinker {
-    public partial class Equipment_DeflectorShield {
-        abstract class Mode : EquipmentComponent {
-            protected abstract float Dispersion { get; }
-            protected abstract float Repulsion { get; }
-            protected abstract float Vectoring { get; }
+    public partial class Equipment_DeflectorArray {
+        abstract class Targeting : EquipmentComponent {
+            protected abstract Layer[] targets { get; }
+            public override void BeginInstantiation(EquipmentEx eq) => eq.GetEffect<Effects.Targets>().value = Utilities.GetLayerMask(targets);
 
-            public override void BeginInstantiation(EquipmentEx eq) {
-                eq.GetEffect<Effects.Magnitudes.Dispersion>().value = Dispersion;
-                eq.GetEffect<Effects.Magnitudes.Repulsion>().value = Repulsion;
-                eq.GetEffect<Effects.Magnitudes.Vectoring>().value = Vectoring;
+            class Asteroid : Targeting {
+                public override string DisplayName => "Asteroid";
+                public override string Description => "asteroids";
+                protected override Layer[] targets => new Layer[] { Layer.Asteroid };
             }
-
-            class Deflector : Mode {
-                public override string DisplayName => "Deflector";
-                public override string Description => "slowing, redirecting, and repelling";
-                protected override float Dispersion => 1;
-                protected override float Repulsion => 0.3f;
-                protected override float Vectoring => 1;
-                public override void FinishInstantiation(EquipmentEx eq) {
-                    eq.GetEffect<Effects.Force>().value /= 1.4f;
-                }
+            class Civilian : Targeting {
+                public override string DisplayName => "Civilian";
+                public override string Description => "approaching obstacles";
+                protected override Layer[] targets => new Layer[] { Layer.Asteroid, Layer.Collectible, Layer.Object, Layer.Spaceship, Layer.Station };
             }
-            class Disperser : Mode {
-                public override string DisplayName => "Dispersion";
-                public override string Description => "slowing";
-                protected override float Dispersion => 0.9f;
-                protected override float Repulsion => 0.02f;
-                protected override float Vectoring => 0.1f;
+            class Combat : Targeting {
+                public override string DisplayName => "Combat";
+                public override string Description => "hostile projectiles and drones";
+                protected override Layer[] targets => new Layer[] { Layer.Default, Layer.SmallObject, Layer.Missiles };
             }
-            class Repulsor : Mode {
-                public override string DisplayName => "Repulsor";
-                public override string Description => "vigorously repelling";
-                protected override float Dispersion => 0;
-                protected override float Repulsion => 1;
-                protected override float Vectoring => 0;
-                public override void FinishInstantiation(EquipmentEx eq) {
-                    eq.GetEffect<Effects.Emitters>().value *= 0.5f;
-                    eq.GetEffect<Effects.Force>().value *= 1.8f;
-                    eq.GetEffect<Effects.Hardness>().value *= 1.5f;
-                    eq.GetEffect<Effects.Range>().value *= 0.5f;
-                }
-            }
-            class Vector : Mode {
-                public override string DisplayName => "Vectored";
-                public override string Description => "redirecting";
-                protected override float Dispersion => 0;
-                protected override float Repulsion => 0.3f;
-                protected override float Vectoring => 0.8f;
+            class Multiplex : Targeting {
+                public override string DisplayName => "Multiplex";
+                public override string Description => "approaching obstacles and hostile objects";
+                protected override Layer[] targets => new Layer[] { Layer.Asteroid, Layer.Collectible, Layer.Object, Layer.Spaceship, Layer.Station, Layer.Default, Layer.SmallObject, Layer.Missiles };
             }
         }
     }
 
-    //public static class Equipment_DeflectorShieldz {
+    //public static class Equipment_DeflectorArrayz {
     //	readonly static Layer[] targets_asteroid = new Layer[] { Layer.Asteroid };
     //	readonly static Layer[] targets_civilian = new Layer[] { Layer.Asteroid, Layer.Collectible, Layer.Object, Layer.Spaceship, Layer.Station };
     //	readonly static Layer[] targets_combat = new Layer[] { Layer.Default, Layer.SmallObject, Layer.Missiles };
@@ -65,11 +39,11 @@ namespace Charon.StarValor.MasterTinker {
     //		eq.name = typeName;
     //		eq.id = Core.Context.IndexSystem.Set(IndexType.Equipment, typeName);
     //		eq.activated = true;
-    //		eq.activeEquipmentIndex = Core.Context.IndexSystem.Get(IndexType.ActiveEffect, typeof(AE_DeflectorShield).FullName);
+    //		eq.activeEquipmentIndex = Core.Context.IndexSystem.Get(IndexType.ActiveEffect, typeof(AE_DeflectorArray).FullName);
     //		eq.defaultKey = KeyCode.X;
     //		eq.description = description + $"\n\nDefault key: '{Enum.GetName(typeof(KeyCode), eq.defaultKey)}'";
     //		eq.dropLevel = DropLevel.Normal;
-    //		eq.effects = null;// Core.Context.EffectSystem.GetEffects<Buff_DeflectorShield.Data>(effectMultiplier, Extensions.GetLayerMask(targets), force, range, hardness, emitters, repulsion, deflection, dispersion);
+    //		eq.effects = null;// Core.Context.EffectSystem.GetEffects<Buff_DeflectorArray.Data>(effectMultiplier, Extensions.GetLayerMask(targets), force, range, hardness, emitters, repulsion, deflection, dispersion);
     //		eq.energyCost = energy;
     //		eq.equipName = name;
     //		eq.minShipClass = minClass;
@@ -167,13 +141,13 @@ namespace Charon.StarValor.MasterTinker {
     //		id = Core.GetIndex(id),
 
     //		activated = false,
-    //		activeEquipmentIndex = Core.GetActiveIndex(typeof(AE_DeflectorShield)),
+    //		activeEquipmentIndex = Core.GetActiveIndex(typeof(AE_DeflectorArray)),
     //		//buff
     //		//crafting materials //make list; use auto-generated for testing
     //		defaultKey = KeyCode.G,
     //		description = $"Test Description (size: {size})",
     //		dropLevel = DropLevel.Normal, //boss/elite loot, etc
-    //		effects = EffectAttribute.CreateEffects(typeof(AE_DeflectorShield), effectValues[size]), //determines uniquness, stores effectiveness information,
+    //		effects = EffectAttribute.CreateEffects(typeof(AE_DeflectorArray), effectValues[size]), //determines uniquness, stores effectiveness information,
     //		//enableChangeKey //whether or not the key can be changed?
     //		energyCost = energyCosts[size],
     //		//energyCostPerShipClass //bool, modifies energy cost by ship class (determine how)

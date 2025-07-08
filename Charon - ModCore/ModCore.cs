@@ -1,4 +1,6 @@
-﻿using System;
+﻿//Idea: Force Beam - maybe grapple at range, throw asteroids at people, etc?
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -52,7 +54,7 @@ namespace Charon.StarValor.ModCore {
                 if (uniqueTypes.Contains(type))
                     continue;
                 uniqueTypes.Add(type);
-                Logger.LogMessage($"  Patch: {type.FullName}");
+                Log.LogMessage($"  Patch: {type.FullName}");
                 patchedPlugins.Add(Harmony.CreateAndPatchAll(type));
             }
             uniqueTypes = null;
@@ -62,13 +64,18 @@ namespace Charon.StarValor.ModCore {
 
             Log.LogMessage($"Loading {pluginsByGuid.Count} plugins");
             foreach (var plugin in pluginsByGuid.Values) {
-                Logger.LogMessage($"  Load: {plugin.Guid}");
+                Log.LogMessage($"  Load: {plugin.Guid}");
                 plugin.OnPluginLoad();
             }
             foreach (var plugin in pluginsByGuid.Values) {
-                Logger.LogMessage($"  LoadLate: {plugin.Guid}");
+                Log.LogMessage($"  LoadLate: {plugin.Guid}");
                 plugin.OnPluginLoadLate();
             }
+            Log.LogMessage($"Initializing EquipmentDB");
+
+            EquipmentDB.ClearDatabase();
+            EquipmentDB.LoadDatabaseForce();
+
             Log.LogMessage($"{pluginName} done initializing");
         }
         public void UninitializeAll() {

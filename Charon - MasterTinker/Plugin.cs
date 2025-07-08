@@ -1,4 +1,5 @@
-﻿using BepInEx;
+﻿using System.Linq;
+using BepInEx;
 using Charon.StarValor.ModCore;
 using HarmonyLib;
 using UnityEngine;
@@ -21,17 +22,22 @@ namespace Charon.StarValor.MasterTinker {
         public const string pluginGuid = "ModCore.MasterTinker";
         public const string pluginName = "MasterTinker";
         public const string pluginVersion = "0.0.0.0";
-        public static ModCorePlugin Instance { get; private set; }
+        public static Plugin Instance { get; private set; }
         void Awake() => Instance = this;
+
+        bool equipAdded = false;
 
         public override void OnPluginLoadLate() {
             EquipmentItem.GetAllPermutations<Equipment_HyperspatialAnchor>();
-            EquipmentItem.GetAllPermutations<Equipment_DeflectorShield>();
+            EquipmentItem.GetAllPermutations<Equipment_DeflectorArray>();
         }
 
         [HarmonyPatch(typeof(CharacterScreen), nameof(CharacterScreen.Open))]
         [HarmonyPostfix]
         public static void Open(int mode) {
+            if (Instance.equipAdded)
+                return;
+
             var player = GameObject.FindGameObjectWithTag("Player");
             if (player is null)
                 Instance.Log.LogWarning("player not found");
@@ -51,17 +57,18 @@ namespace Charon.StarValor.MasterTinker {
 
             Instance.Log.LogMessage("Spawning items");
             void grantEquipment<T>() where T : EquipmentItem {
-                foreach (var eq in EquipmentItem.GetAllPermutations<T>()) {
-                    Instance.Log.LogMessage("Spawning " + eq.name);
-                    if ((int)eq.minShipClass <= ship.sizeClass) {
-                        Instance.Log.LogMessage($"    Adding {eq.name}");
+                foreach (var eq in EquipmentItem.GetAllPermutations<T>().Where(o => o.TemplateData.Template is Equipment_DeflectorArray)) {
+                    //Instance.Log.LogMessage("Spawning " + eq.name);
+                    //if ((int)eq.minShipClass <= ship.sizeClass) {
+                        Instance.Log.LogMessage($"    Adding {eq.name} {eq.id}");
                         for (int rarity = 0; rarity <= 5; ++rarity)
-                            cargo_system.StoreItem(2, eq.id, rarity, 1, 0f, -1, -1);
-                    }
+                        cargo_system.StoreItem(2, eq.id, rarity, 1, 0f, -1, -1);
+                    //}
                 }
             }
-            grantEquipment<Equipment_HyperspatialAnchor>();
-            grantEquipment<Equipment_DeflectorShield>();
+            //grantEquipment<Equipment_HyperspatialAnchor>();
+            grantEquipment<Equipment_DeflectorArray>();
+            Instance.equipAdded = true;
 
 
             //Log.LogWarning("Cargo test");

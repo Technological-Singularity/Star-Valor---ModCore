@@ -93,8 +93,8 @@ namespace Charon.StarValor.ModCore {
         [Serialize]
         Dictionary<(LocationType type, int id), IHasLocation> locationOwners = new Dictionary<(LocationType, int), IHasLocation>();
 
-        [Serialize]
-        IHasLocation activeLocation;
+        //[Serialize]
+        //IHasLocation activeLocation;
         
         [Serialize]
         int generalLocationMaxIndex = 0;

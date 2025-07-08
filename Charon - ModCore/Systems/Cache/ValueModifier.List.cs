@@ -20,7 +20,7 @@ namespace Charon.StarValor.ModCore {
             }
 
             public ValueModifier Get(object key) => this[key];
-            public ValueModifier Get<T>() => this[typeof(TAmmo)];
+            public ValueModifier Get<T>() => this[typeof(T)];
 
             public void Link(object anchor) {
                 foreach (var modifier in this.Values)

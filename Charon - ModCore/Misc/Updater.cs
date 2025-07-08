@@ -33,36 +33,43 @@ namespace Charon.StarValor.ModCore {
                 }
             }
         }
-        Dictionary<Action, ActionTracker> onUpdate = null;
-        List<Action> onFixedUpdate = null;
+        Dictionary<Action, ActionTracker> OnUpdate = null;
+        List<Action> OnFixedUpdate = null;
 
         void Update() {
-            if (onUpdate != null)
-                foreach (var action in onUpdate.Values)
+            if (OnUpdate != null)
+                foreach (var action in OnUpdate.Values)
                     action.Invoke?.Invoke();
         }
         void FixedUpdate() {
-            if (onFixedUpdate != null)
-                foreach (var action in onFixedUpdate)
-                    action?.Invoke();
+            if (OnFixedUpdate != null)
+                foreach (var action in OnFixedUpdate)
+                    action.Invoke();
         }
-        public void Register(Action onUpdate, float period = 0) => _Register(onUpdate, period);
-        ActionTracker _Register(Action onUpdate, float period) {
-            if (this.onUpdate == null)
-                this.onUpdate = new Dictionary<Action, ActionTracker>();
-            var tracker = new ActionTracker(onUpdate, period);
-            this.onUpdate[onUpdate] = tracker;
-            return tracker;
+        public void SetOnUpdate(Action action, float? period) {
+            if (period is null) {
+                OnUpdate?.Remove(action);
+            }
+            else {
+                if (OnUpdate == null)
+                    OnUpdate = new Dictionary<Action, ActionTracker>();
+                if (!OnUpdate.TryGetValue(action, out var tracker)) {
+                    tracker = new ActionTracker(action, period.Value);
+                    OnUpdate.Add(action, tracker);
+                }
+            }
         }
-        public void SetPeriod(Action onUpdate, float period) {
-            if (!this.onUpdate.TryGetValue(onUpdate, out var tracker))
-                tracker = _Register(onUpdate, period);
-            tracker.period = period;
-        }
-        public void RegisterFixed(Action onFixedUpdate) {
-            if (this.onFixedUpdate == null)
-                this.onFixedUpdate = new List<Action>();
-            this.onFixedUpdate.Add(onFixedUpdate);
+        public void SetOnFixedUpdate(Action action, bool enabled) {
+            if (enabled) {
+                if (OnFixedUpdate == null)
+                    OnFixedUpdate = new List<Action>();
+                if (!OnFixedUpdate.Contains(action))
+                    OnFixedUpdate.Add(action);
+            }
+            else {
+                OnFixedUpdate?.Remove(action);
+            }
+
         }
     }
 }

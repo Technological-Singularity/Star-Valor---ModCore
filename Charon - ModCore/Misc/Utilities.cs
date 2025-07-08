@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using HarmonyLib;
+using System.Runtime.ExceptionServices;
 
 namespace Charon.StarValor.ModCore {
     [HasPatches]
@@ -80,6 +81,20 @@ namespace Charon.StarValor.ModCore {
                     second.SetValue(hasSecond, first.GetValue(hasFirst));
             else
                 throw new ArgumentException("dst must be first or second");
+        }
+        public static List<(string, string)> BindDump(object obj, List<(PropertyInfo first, FieldInfo second)> binds) {
+            List<(string, string)> wr = new List<(string, string)>();
+            foreach(var (first, second) in binds) {
+                string name = null;
+                string val = null;
+                if (first.DeclaringType.IsAssignableFrom(obj.GetType()))
+                    (name, val) = (first.Name, first.GetValue(obj)?.ToString());
+                else if (second.DeclaringType.IsAssignableFrom(obj.GetType()))
+                    (name, val) = (second.Name, second.GetValue(obj)?.ToString());
+                if (!(name is null))
+                    wr.Add((name, val));
+            }
+            return wr;
         }
         public static List<(PropertyInfo first, PropertyInfo second)> GetBindsPropertyProperty<TFirst, TSecond>() {
             var binds = new List<(PropertyInfo, PropertyInfo)>();
@@ -184,7 +199,6 @@ namespace Charon.StarValor.ModCore {
             return found;
         }
         public static IEnumerable<Type> EnumerateTypes(Func<Type, bool> predicate) => AppDomain.CurrentDomain.GetAssemblies().SelectMany(o => o.GetTypes().Where(t => predicate(t)));
-        public static float GetEffectValue(this Equipment equipment, Effect effect, int rarity, int qnt) => effect.value * qnt * GetRarityMod(rarity, equipment.rarityMod, effect.mod);
         //Patched version of base version; used here to preserve base version
         public static float GetRarityMod(int rarity, float equipRarityMod, float effectMod) {
             float result = 1f;
@@ -223,6 +237,16 @@ namespace Charon.StarValor.ModCore {
             for (int i = 0; i < layers.Length; ++i)
                 ret |= 1 << (int)layers[i];
             return ret;
+        }
+
+        public static Guid Int_to_Guid(int value) {
+            var bytes = new byte[16];
+            BitConverter.GetBytes(value).CopyTo(bytes, 0);
+            return new Guid(bytes);
+        }
+        public static int Guid_to_Int(Guid guid) {
+            var bytes = guid.ToByteArray();
+            return BitConverter.ToInt32(bytes, 0);
         }
     }
 }

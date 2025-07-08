@@ -8,24 +8,25 @@ namespace Charon.StarValor.ModCore {
     [HasPatches]
     public sealed class EquipmentEx : Equipment, IIndexableInstance, ISerializable {
         #region Patches
-        static Dictionary<int, Equipment> equipmentDict = new Dictionary<int, Equipment>();
         static MethodInfo _EquipmentDB_ValidateDatabase = typeof(EquipmentDB).GetMethod("ValidateDatabase", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
         static Action EquipmentDB_ValidateDatabase = () => _EquipmentDB_ValidateDatabase.Invoke(null, null);
-        //static FieldInfo _EquipmentDB_Equipments = typeof(EquipmentDB).GetField("equipments", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-        //static List<Equipment> EquipmentDB_Equipments => (List<Equipment>)_EquipmentDB_Equipments.GetValue(null);
 
         [HarmonyPatch(typeof(EquipmentDB), nameof(EquipmentDB.LoadDatabaseForce))]
         [HarmonyPostfix]
         public static void LoadDatabaseForce(List<Equipment> ___equipments) {
             if (!defaultEquipmentRegistered) {
                 defaultEquipmentRegistered = true;
+                ___equipments.Sort((x, y) => x.id.CompareTo(y.id));
                 foreach (var equipment in ___equipments) {
+                    //ModCore.Instance.Log.LogWarning($"Loading {equipment.name} [{equipment.id}]");
                     var template = DefaultEquipmentTemplate.Register(equipment);
-                    var eq = template.CreateInstance();
-                    equipmentDict.Add(eq.id, eq);
+                    var eq = (EquipmentEx)template.CreateInstance(new QualifiedName(typeof(Equipment), equipment.name), template.Guid);
+                    //if (eq.activated)
+                    //    ModCore.Instance.Log.LogWarning("Adding AE for " + eq.name);
                 }
+                //ModCore.Instance.Log.LogWarning("Done loading default equipment");
             }
-            ___equipments = new List<Equipment>();
+            ___equipments.Clear();
             foreach (var eq in IndexSystem.Instance.GetAllTypeInstance<EquipmentEx>().Where(ex => ex.TemplateData.Template is DefaultEquipmentTemplate))
                 ___equipments.Add(eq);
             EquipmentDB.SortList();
@@ -36,13 +37,11 @@ namespace Charon.StarValor.ModCore {
         [HarmonyPrefix]
         public static bool GetEquipment(ref Equipment __result, int id) {
             EquipmentDB_ValidateDatabase();
-            return !equipmentDict.TryGetValue(id, out __result);
-        }
-
-        [HarmonyPatch(typeof(EquipmentDB), nameof(EquipmentDB.ClearDatabase))]
-        [HarmonyPostfix]
-        public static void ClearDatabase(ref bool ___databaseLoaded, List<Equipment> ___equipments) {
-            equipmentDict.Clear();
+            if (IndexSystem.Instance.TryGetTypeInstance<EquipmentEx>(Utilities.Int_to_Guid(id), out var wr)) {
+                __result = wr;
+                return false;
+            }
+            return true;
         }
 
         [HarmonyPatch(typeof(Equipment), nameof(Equipment.IsDrone), MethodType.Getter)]
@@ -56,17 +55,6 @@ namespace Charon.StarValor.ModCore {
         }
         #endregion
 
-        internal static bool TryAddEquipment(Equipment eq) {
-            if (equipmentDict.ContainsKey(eq.id))
-                return false;
-            equipmentDict.Add(eq.id, eq);
-            return true;
-        }
-        internal static bool TryRemoveEquipment(Equipment eq) {
-            return equipmentDict.Remove(eq.id);
-        }
-
-        #region IIndexableInstance
         [Serialize]
         public IndexableInstanceData TemplateData { get; set; }
 
@@ -74,10 +62,7 @@ namespace Charon.StarValor.ModCore {
             TemplateData = new IndexableInstanceData(this);
             effects = new List<Effect>() { EffectEx.Empty };
         }
-        public int Id {
-            get => id;
-            set => id = value;
-        }
+        public Guid Guid { get; set; }
         public QualifiedName QualifiedName { get; set; }
         int IIndexable.RefCount { get; set; } = 0;
         bool IIndexable.UseQualifiedName { get; } = true;
@@ -85,7 +70,6 @@ namespace Charon.StarValor.ModCore {
 
         object ISerializable.OnSerialize() => null;
         void ISerializable.OnDeserialize(object serialization) { }
-        #endregion
 
         public ActiveEquipmentEx ActiveEquipment { get; set; } = null;
 

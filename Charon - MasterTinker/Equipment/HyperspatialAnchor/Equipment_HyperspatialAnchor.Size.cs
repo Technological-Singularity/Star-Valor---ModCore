@@ -15,6 +15,7 @@ namespace Charon.StarValor.MasterTinker {
             }
             class Small : Size {
                 public override string DisplayName => null;
+                public override string DisplayNameSeparator => null;
                 protected override ShipClassLevel MinSize => ShipClassLevel.Shuttle;
                 protected override float Count => 1;
                 protected override float Range => 40;

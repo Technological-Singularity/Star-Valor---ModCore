@@ -3,66 +3,80 @@ using System.Collections.Generic;
 using System.Linq;
 
 namespace Charon.StarValor.ModCore {
-    public class ResourceAllocator : ISerializable {
-        const int populateCount = 10;
-        const int indexRegionStart = 1 << 24;
-        
+    public class ResourceAllocator : ISerializable {       
         [Serialize]
-        SerializableDictionary<int, IIndexable> allocatedIdx = new SerializableDictionary<int, IIndexable>();
+        SerializableDictionary<Guid, IIndexable> allocatedGuid = new SerializableDictionary<Guid, IIndexable>();
         
-        Dictionary<IIndexable, int> allocatedObjects = new Dictionary<IIndexable, int>();
+        Dictionary<IIndexable, Guid> allocatedObjects = new Dictionary<IIndexable, Guid>();
+        public IEnumerable<IIndexable> Values => allocatedGuid.Values;
+
+        //Using GUID to emulate int - until int can be totally replaced
+        const int populateCount = 1;
+        const int indexRegionStart = 1 << 24;
         int indexRegionCurrentMax = indexRegionStart;
-        Queue<int> available = new Queue<int>();
-
-        public IEnumerable<IIndexable> Values => allocatedIdx.Values;
-
-        public int Allocate(IIndexable instance, int? staticId) {
-            if (staticId is null) {
-                if (allocatedObjects.TryGetValue(instance, out var id))
-                    return id;
-                if (available.Count == 0) {
-                    int val = indexRegionCurrentMax;
-                    for (int i = 0; i < populateCount; ++i) {
-                        while (allocatedIdx.ContainsKey(val))
-                            ++val;
-                        available.Enqueue(val++);
-                    }
+        LinkedList<Guid> available = new LinkedList<Guid>();
+        Guid GetNextGuid() {
+            if (available.Count == 0) {
+                int val = indexRegionCurrentMax;
+                for (int i = 0; i < populateCount; ++i) {
+                    Guid toAlloc;
+                    do {
+                        toAlloc = Utilities.Int_to_Guid(val++);
+                    } while (allocatedGuid.ContainsKey(toAlloc));
+                    available.AddLast(toAlloc);
                 }
-                id = available.Dequeue();
+            }
+            var guid = available.Last.Value;
+            available.RemoveLast();
+            var id = Utilities.Guid_to_Int(guid);
+            if (indexRegionCurrentMax < id)
+                indexRegionCurrentMax = id;
+            if (indexRegionCurrentMax == int.MaxValue)
+                indexRegionCurrentMax = indexRegionStart;
+            return guid;
 
-                allocatedObjects[instance] = id;
-                allocatedIdx[id] = instance;
+            //Use below once int is removed
+            //Guid guid;
+            //do {
+            //    guid = Guid.NewGuid();
+            //} while (allocatedGuid.ContainsKey(guid));
+            //return guid;
+        }
 
-                if (indexRegionCurrentMax < id)
-                    indexRegionCurrentMax = id;
-                if (indexRegionCurrentMax == int.MaxValue)
-                    indexRegionCurrentMax = indexRegionStart;
-
-                return id;
+        public Guid Allocate(IIndexable instance, Guid? staticGUID) {
+            if (staticGUID is null) {
+                if (allocatedObjects.TryGetValue(instance, out var guid))
+                    return guid;                
+                guid = GetNextGuid();
+                allocatedObjects[instance] = guid;
+                allocatedGuid[guid] = instance;
+                return guid;
             }
             else {
-                var id = staticId.Value;
-                if (allocatedIdx.ContainsKey(id))
-                    throw new ArgumentException("Already allocated", "id");
-                allocatedObjects[instance] = id;
-                allocatedIdx[id] = instance;
-                return id;
+                var guid = staticGUID.Value;
+                if (allocatedGuid.ContainsKey(guid))
+                    throw new ArgumentException("Already allocated Guid", instance.QualifiedName.Name + " " + guid.ToString());
+                available.Remove(guid);
+                allocatedObjects[instance] = guid;
+                allocatedGuid[guid] = instance;
+                return guid;
             }
         }
-        public bool Deallocate(int id) {
-            if (!allocatedIdx.TryGetValue(id, out var instance))
-                throw new ArgumentException("Not allocated", "id");
+        public bool Deallocate(Guid guid) {
+            if (!allocatedGuid.TryGetValue(guid, out var instance))
+                throw new ArgumentException("Not allocated Guid", guid.ToString());
             allocatedObjects.Remove(instance);
-            allocatedIdx.Remove(id);
+            allocatedGuid.Remove(guid);
+            available.AddFirst(guid);
             return allocatedObjects.Count == 0;
         }
-        public bool TryGetValue(int id, out IIndexable obj) => allocatedIdx.TryGetValue(id, out obj);
-        public IIndexable FirstOrDefault() => allocatedIdx.Values.FirstOrDefault() ?? default;
+        public bool TryGetValue(Guid guid, out IIndexable obj) => allocatedGuid.TryGetValue(guid, out obj);
+        public IIndexable FirstOrDefault() => allocatedGuid.Values.FirstOrDefault() ?? default;
         public object OnSerialize() => null;
         public void OnDeserialize(object data) {
             allocatedObjects.Clear();
-            foreach (var o in allocatedIdx) {
-                o.Value.Id = o.Key;
+            foreach (var o in allocatedGuid) {
+                o.Value.Guid = o.Key;
                 allocatedObjects.Add(o.Value, o.Key);
             }
         }

@@ -402,7 +402,7 @@ namespace Charon.StarValor.AggressiveProjectiles {
             Weapon instance, SpaceShip ss, Transform mainParent, bool isDrone, bool loaded,
             TWeapon wRef, float chargeTime, Transform weaponSlot,
             MuzzleFlash muzzleFlash, MuzzleFlash[] extraMuzzleFlash, Color muzzleFlashColor, float flashSize,
-            float delayTime, TCritical critical,
+            float delayTime, TDamage tDamage,
             WeaponStatsModifier mods, GameObject projectileRef, Transform gunTip,
             Drone drone, Rigidbody rbShip, float damage,
             AudioSource audioS, float audioMod, AudioClip audioToPlay,
@@ -426,16 +426,17 @@ namespace Charon.StarValor.AggressiveProjectiles {
 
             if (currCoolDown <= 0f && PayCost(instance)) {
                 var dmgMod = 1f;
-                var tempCritical = critical;
+                var tempTDmg = tDamage;
                 if (!isDrone) {
                     dmgMod = ss.DamageMod((int)wRef.type) * mods.DamageMod((int)wRef.type);
                     if (chargedFireCount > 0f) {
                         dmgMod *= chargedDamageBoost;
                     }
-                    tempCritical.chance += mods.criticalChanceBonus;
-                    tempCritical.dmgBonus += mods.criticalDamageBonus;
+                    tempTDmg.critChance += mods.criticalChanceBonus;
+                    tempTDmg.critDmgBonus += mods.criticalDamageBonus;
+                    tempTDmg.armorPen += mods.armorPenBonus;
                     if (ss.fluxChargeSys.charges > 0)
-                        tempCritical = ss.stats.ApplyFluxCriticalBonuses(tempCritical);
+                        tempTDmg = ss.stats.ApplyFluxCriticalBonuses(tempTDmg);
                 }
 
                 void FireBarrel(MuzzleFlash _muzzleFlash, Transform _barrelTip) {
@@ -467,7 +468,7 @@ namespace Charon.StarValor.AggressiveProjectiles {
                         projControl.aoe = wRef.aoe;
                         projControl.transform.localScale = size * sizeMod;
                     }
-                    projControl.critical = tempCritical;
+                    projControl.tDmg = tempTDmg;
                     projControl.impact = impact;
                     projControl.speed = (float)projSpeed;
                     if (wRef.timedFuse) {
@@ -479,7 +480,7 @@ namespace Charon.StarValor.AggressiveProjectiles {
                         projControl.explodeOnDestroy = wRef.explodeOnMaxRange;
                     }
                     projControl.damageType = wRef.damageType;
-                    projControl.owner = mainParent;
+                    projControl.ownerSS = (isDrone ? drone.ownerSS : ss);
                     projControl.canHitProjectiles = wRef.canHitProjectiles;
                     projControl.piercing = wRef.piercing;
                     var projRB = gameObject.GetComponent<Rigidbody>();
@@ -493,6 +494,7 @@ namespace Charon.StarValor.AggressiveProjectiles {
                     else {
                         projRB.velocity = rbShip.velocity;
                     }
+                    
                     if (projControl.homing) {
                         var control = projControl.gameObject.AddComponent<ProjectileHoming>();
                         control.Initialize(mainParent, projRB, ss, instance, target, projSpeed, projControl.turnSpeed * 15); //15 is from original code
@@ -545,7 +547,7 @@ namespace Charon.StarValor.AggressiveProjectiles {
             Weapon __instance, SpaceShip ___ss, Transform ___mainParent, bool ___isDrone, bool ___loaded,
             TWeapon ___wRef, float ___chargeTime, Transform ___weaponSlot,
             MuzzleFlash ___muzzleFlash, MuzzleFlash[] ___extraMuzzleFlash, Color ___muzzleFlashColor, float ___flashSize,
-            float ___delayTime, TCritical ___critical,
+            float ___delayTime, TDamage ___tDmg,
             WeaponStatsModifier ___mods, GameObject ___projectileRef, Transform ___gunTip,
             Drone ___drone, Rigidbody ___rbShip, float ___damage,
             AudioSource ___audioS, float ___audioMod, AudioClip ___audioToPlay,
@@ -559,7 +561,7 @@ namespace Charon.StarValor.AggressiveProjectiles {
                 __instance, ___ss, ___mainParent, ___isDrone, ___loaded,
                 ___wRef, ___chargeTime, ___weaponSlot,
                 ___muzzleFlash, ___extraMuzzleFlash, ___muzzleFlashColor, ___flashSize,
-                ___delayTime, ___critical,
+                ___delayTime, ___tDmg,
                 ___mods, ___projectileRef, ___gunTip, ___drone,
                 ___rbShip, ___damage, ___audioS, ___audioMod, ___audioToPlay,
                 ___explodeBoostChance, ___explodeBoost, ___size, ___sizeMod,

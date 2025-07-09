@@ -50,7 +50,7 @@ namespace Charon.StarValor.ModCore {
         public static DefaultEquipmentTemplate Register(Equipment equipment) {
             if (registered.TryGetValue(equipment.id, out var wr))
                 return wr;
-            ModCore.Instance.Log.LogMessage($"    Registering {equipment.name} as EquipmentEx [{equipment.id}]");
+            //ModCore.Instance.Log.LogMessage($"    Registering {equipment.name} as EquipmentEx [{equipment.id}]");
             wr = new DefaultEquipmentTemplate(equipment);
             IndexSystem.Instance.AllocateTypeInstance(wr, Utilities.Int_to_Guid(equipment.id));
             registered.Add(equipment.id, wr);
@@ -63,7 +63,7 @@ namespace Charon.StarValor.ModCore {
         public override bool UseQualifiedName { get; } = false;
         public override bool UniqueType { get; } = false;
 
-        List<EffectExTemplate> effects;
+        List<EffectExTemplate> effectTemplates;
 
         #region Binds
         static List<(PropertyInfo, FieldInfo)> binds { get; } = Utilities.GetBindsPropertyField<BaseValues, Equipment>();
@@ -81,8 +81,9 @@ namespace Charon.StarValor.ModCore {
             public int SortPower { get; set; } = 1;
             public float MassChange { get; set; }
             public EquipmentType Type { get; set; }
-            public List<Effect> Effects { get; set; }
+            //public List<Effect> Effects { get; set; }
             public bool UniqueReplacement { get; set; }
+            public bool Permanent { get; set; }
             public float RarityMod { get; set; } = 1f;
             public int SellChance { get; set; } = 100;
             public ReputationRequisite RepReq { get; set; }
@@ -95,6 +96,7 @@ namespace Charon.StarValor.ModCore {
             public GameObject Buff { get; set; }
             public int RequiredItemID { get; set; } = -1;
             public int RequiredQnt { get; set; }
+            public float AddCargoSpaceForReqItem { get; set; }
             public string EquipName { get; set; }
             public string Description { get; set; }
             public List<CraftMaterial> CraftingMaterials { get; set; }
@@ -104,8 +106,9 @@ namespace Charon.StarValor.ModCore {
 
         DefaultEquipmentTemplate(Equipment equipment) {
             Name = equipment.name;
-            effects = equipment.effects?.Select(o => DefaultEffectTemplate.Register(o)).ToList() ?? null;
             Utilities.BindSet(bindValues, binds, bindValues, equipment);
+            //bindValues.Effects = new List<Effect>() { EffectEx.Empty };
+            effectTemplates = equipment.effects?.Select(o => DefaultEffectTemplate.Register(o)).ToList() ?? null;
         }       
         public override IEnumerable<EquipmentEx> GetAllPermutations() {
             return new List<EquipmentEx>(Instances.Select(o => (EquipmentEx)o.Value));
@@ -118,13 +121,15 @@ namespace Charon.StarValor.ModCore {
             var eq = (EquipmentEx)instance;
 
             Utilities.BindSet(instance, binds, bindValues, instance);
+
             //ModCore.Instance.Log.LogWarning("---- Binds for " + eq.name);
             //foreach (var (name, val) in Utilities.BindDump(instance, binds))
             //    ModCore.Instance.Log.LogWarning("    " + name + " : " + val);
             //ModCore.Instance.Log.LogWarning("----");
 
             eq.id = Utilities.Guid_to_Int(Guid);
-            eq.effects = effects.Select(o => (Effect)o.CreateInstance(null, null)).ToList();
+            foreach (var template in effectTemplates)
+                eq.AddEffect(template);
             eq.ActiveEquipment = null;
         }
         public override void OnRemoving(IIndexableInstance instance) {
@@ -132,6 +137,8 @@ namespace Charon.StarValor.ModCore {
             var eq = (EquipmentEx)instance;
             eq.ActiveEquipment = null;
             eq.activeEquipmentIndex = 0;
+            foreach (var effect in eq.effects)
+                eq.RemoveEffect((EffectEx)effect);
         }
     }
 }

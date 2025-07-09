@@ -7,11 +7,11 @@ namespace Charon.StarValor.ModCore {
         #region Patches
         [HarmonyPatch(typeof(Equipment), nameof(Equipment.GetEffectString))]
         [HarmonyPrefix]
-        public static bool GetEffectString(ref string __result, Effect effect, int rarity, float rarityMod, int shipClass) {
+        public static bool GetEffectString(ref string __result, Effect effect, int rarity, float rarityMod, int shipClass, Equipment __instance) {
             var context = new EffectContext() { Rarity = rarity, EquipmentRarityMod = rarityMod };
             if (effect is EffectEx ex) {
                 __result = ex.GetDescription(context);
-                return false;
+                return __result is null;
             }
             return true;
         }
@@ -67,7 +67,13 @@ namespace Charon.StarValor.ModCore {
         object ISerializable.OnSerialize() => null;
         void ISerializable.OnDeserialize(object data) { }
 
-        public virtual string GetDescription(EffectContext context) => ((EffectExTemplate)Template).GetDescription(TemplateData, context) + (IsLastInOrder ? "" : " ");
+        private string AppendSpace(string value) {
+            if (value is null)
+                return null;
+            return value + (IsLastInOrder ? "" : " ");
+        }
+
+        public virtual string GetDescription(EffectContext context) => AppendSpace(((EffectExTemplate)Template).GetDescription(TemplateData, context));
         public virtual float GetValue(EffectContext context) => (float)((EffectExTemplate)Template).GetValue(TemplateData, context);
         public virtual void SetValue(EffectContext context, float value) => ((EffectExTemplate)Template).SetValue(TemplateData, context, value);
     }

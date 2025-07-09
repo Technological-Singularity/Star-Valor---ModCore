@@ -40,6 +40,7 @@ namespace Charon.StarValor.ModCore {
 
             IndexSystem.Instance.RegisterTypeInstance(instance);
             Instances.Add(instance.QualifiedName, instance);
+            //ModCore.Instance.Log.LogMessage($"    Applying {instance.QualifiedName}");
             instance.TemplateData.Template.OnApplying(instance);
         }
         public virtual void OnApplying(IIndexableInstance instance) { }

@@ -1,4 +1,6 @@
-﻿namespace Charon.StarValor.ModCore {
+﻿using System.Collections.Generic;
+
+namespace Charon.StarValor.ModCore {
     //to do: postfix projectile setup to grab weapon from ship, using same method as before
     //to do: postfix Fire and FireExtra to run setup methods instead of the above - Fire is straightforward; determine how to postfix IEnumerable effectively
     //to do: extend/replace Weapon in order to resolve the above in a normal way
@@ -47,9 +49,16 @@
             };
             return tammo;
         }
+        public class TWeaponEx : TWeapon {
+            public List<WeaponType> weaponTypes { get; } = new List<WeaponType>();
+            public void Initialize() {
+                weaponTypes.Clear();
+                weaponTypes.Add(type);
+            }
+        }
         public static TWeapon CreateWeapon() {
             TAmmo ammo = null;
-            TWeapon tweapon = new TWeapon() {
+            var tWeapon = new TWeaponEx() {
                 //required data
                 name = "name",
                 description = "description",
@@ -62,8 +71,8 @@
                 //basic stats
                 techLevel = 0, //required tech level for equip and crafting => could be more complex
                 space = 1, //space used by weapon/cargo system, shouldn't necessarily be the same value
-                craftingMaterials = new System.Collections.Generic.List<CraftMaterial>(), //list of materials used to craft
-                materials = new System.Collections.Generic.List<CraftMaterial>(), //list of materials granted when dismantling
+                craftingMaterials = new List<CraftMaterial>(), //list of materials used to craft
+                materials = new List<CraftMaterial>(), //list of materials granted when dismantling
                 critChance = 0, //crit chance/100
                 damage = 0, //damage dealt by single hit
                 heatGenMod = 1, //factor used in calculating heat gen => can patch TWeapon.heatGen{get} if necessary > note this also includes skill bonus factor
@@ -102,9 +111,10 @@
                 chargedFireTime = 0, //time allowed to fire after charging
                 chargeTime = 0, //time required to charge weapon
             };
-            int index = GameData.data.AddWeaponData(tweapon);
-            tweapon.index = index;
-            return tweapon;
+            tWeapon.Initialize();
+            int index = GameData.data.AddWeaponData(tWeapon);
+            tWeapon.index = index;
+            return tWeapon;
         }
     }
     public class WeaponEx : Weapon {

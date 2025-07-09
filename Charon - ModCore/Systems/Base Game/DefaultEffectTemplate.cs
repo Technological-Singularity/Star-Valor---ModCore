@@ -5,8 +5,6 @@ using System.Reflection;
 namespace Charon.StarValor.ModCore {
     [RegisterManual]
     public partial class DefaultEffectTemplate : EffectExTemplate {
-        static Dictionary<int, DefaultEffectTemplate> registered = new Dictionary<int, DefaultEffectTemplate>();
-
         public override bool UniqueType { get; } = false;
         public override bool UseQualifiedName { get; } = true;
 
@@ -23,21 +21,26 @@ namespace Charon.StarValor.ModCore {
         #endregion
 
         public static EffectExTemplate Register(Effect effect) {
-            if (registered.TryGetValue(effect.type, out var wr))
-                return wr;
-            var name = "effect_" + effect.type;
-            wr = new DefaultEffectTemplate(effect);
-            IndexSystem.Instance.AllocateTypeInstance(wr, Utilities.Int_to_Guid(effect.type));
-            registered.Add(effect.type, wr);
+            var name = "e_" + effect.type;
+            //ModCore.Instance.Log.LogMessage($"    Registering {name} as DefaultEffectTemplate [{effect.description}]");
+            var wr = new DefaultEffectTemplate(effect);
             wr.QualifiedName = new QualifiedName(wr, name);
             return wr;
         }
         DefaultEffectTemplate(Effect effect) {
             Utilities.BindSet(bindValues, binds, bindValues, effect);
+            //ModCore.Instance.Log.LogWarning("---- Bind SET for " + this.bindValues.Type);
+            //foreach (var (name, val) in Utilities.BindDump(bindValues, binds))
+            //    ModCore.Instance.Log.LogWarning("    " + name + " : " + val);
+            //ModCore.Instance.Log.LogWarning("----");
         }
         public override void OnApplying(IIndexableInstance instance) {
             base.OnApplying(instance);
             Utilities.BindSet(instance, binds, bindValues, instance);
+            //ModCore.Instance.Log.LogWarning("---- Bind LOAD for " + this.bindValues.Type);
+            //foreach (var (name, val) in Utilities.BindDump(instance, binds))
+            //    ModCore.Instance.Log.LogWarning("    " + name + " : " + val);
+            //ModCore.Instance.Log.LogWarning("----");
         }
     }
 }

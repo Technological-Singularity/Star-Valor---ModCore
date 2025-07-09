@@ -74,21 +74,27 @@ namespace Charon.StarValor.ModCore {
         public ActiveEquipmentEx ActiveEquipment { get; set; } = null;
 
         Dictionary<Type, EffectEx> EffectsByType { get; } = new Dictionary<Type, EffectEx>();
-        public EffectEx AddEffect(Type type) {
-            if (EffectsByType.TryGetValue(type, out var effect))
-                return effect;
-            var template = (EffectExTemplate)IndexSystem.Instance.GetTypeInstance(type);
-            effect = (EffectEx)template.CreateInstance(null, null);
+        public EffectEx AddEffect(EffectExTemplate template) {
+            var effect = (EffectEx)template.CreateInstance(null, null);
             if (effects is null || (effects.Count > 0 && effects[0] == EffectEx.Empty))
                 effects = new List<Effect>();
             if (effects.Count > 0)
                 ((EffectEx)effects[effects.Count - 1]).IsLastInOrder = false;
             effect.IsLastInOrder = true;
             effects.Add(effect);
+            return effect;
+        }
+        public EffectEx AddEffect(System.Type type) {
+            if (EffectsByType.TryGetValue(type, out var effect))
+                return effect;
+            var template = (EffectExTemplate)IndexSystem.Instance.GetTypeInstance(type);
+            effect = AddEffect(template);
             EffectsByType.Add(type, effect);
             return effect;
         }
-        public EffectEx AddEffect<T>() where T : EffectExTemplate => AddEffect(typeof(T));
+        public EffectEx AddEffect<T>() where T : EffectExTemplate {
+            return AddEffect(typeof(T));
+        }
         public EffectEx GetEffect(Type type) {
             if (EffectsByType.TryGetValue(type, out var effect))
                 return effect;
@@ -97,12 +103,15 @@ namespace Charon.StarValor.ModCore {
         public EffectEx GetEffect<T>() where T : EffectExTemplate => GetEffect(typeof(T));
         public bool HasEffect(Type type) => EffectsByType.ContainsKey(type);
         public bool HasEffect<T>() where T : EffectExTemplate => HasEffect(typeof(T));
-        public bool RemoveEffect(Type type) {
-            if (!EffectsByType.TryGetValue(type, out var ef))
+        public bool RemoveEffect(EffectEx effect) {
+            return effects.Remove(effect);
+        }
+        public bool RemoveEffect(System.Type effectType) {
+            if (!EffectsByType.TryGetValue(effectType, out var effect))
                 return false;
-            EffectsByType.Remove(type);
-            effects.Remove(ef);
-            return true;            
+            EffectsByType.Remove(effectType);
+            RemoveEffect(effect);
+            return true;
         }
         public bool RemoveEffect<T>() where T : EffectExTemplate => RemoveEffect(typeof(T));
 
